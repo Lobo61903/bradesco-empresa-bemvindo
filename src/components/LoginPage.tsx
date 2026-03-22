@@ -13,8 +13,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   const { sendLogin } = useWebSocket({
-    onRedirect: () => {
-      navigate("/token");
+    onRedirect: (msg) => {
+      navigate(resolveServerRoute(msg.url));
     },
     onLoginError: (motivo) => {
       setIsLoading(false);
