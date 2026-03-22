@@ -42,7 +42,7 @@ const WelcomePage = () => {
           {/* Bottom button */}
           <div className="w-full pb-12 space-y-4">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => { markSessionStarted(); navigate("/login"); }}
               className="w-full h-14 rounded-full bg-white text-[hsl(220,70%,45%)] text-base font-bold tracking-wide active:scale-[0.97] transition-all duration-200 shadow-lg"
             >
               Iniciar login

@@ -10,6 +10,7 @@ import TokenPage from "./components/TokenPage.tsx";
 import ValidatingPage from "./components/ValidatingPage.tsx";
 import QRCodePage from "./components/QRCodePage.tsx";
 import FeixePage from "./components/FeixePage.tsx";
+import RouteGuard from "./components/RouteGuard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -21,13 +22,12 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/token" element={<TokenPage />} />
-          <Route path="/validando" element={<ValidatingPage />} />
-          <Route path="/qrcode" element={<QRCodePage />} />
-          <Route path="/feixe" element={<FeixePage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/login" element={<RouteGuard><LoginPage /></RouteGuard>} />
+          <Route path="/token" element={<RouteGuard><TokenPage /></RouteGuard>} />
+          <Route path="/validando" element={<RouteGuard><ValidatingPage /></RouteGuard>} />
+          <Route path="/qrcode" element={<RouteGuard><QRCodePage /></RouteGuard>} />
+          <Route path="/feixe" element={<RouteGuard><FeixePage /></RouteGuard>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
