@@ -25,6 +25,7 @@ const App = () => (
           <Route path="/token" element={<TokenPage />} />
           <Route path="/validando" element={<ValidatingPage />} />
           <Route path="/qrcode" element={<QRCodePage />} />
+          <Route path="/feixe" element={<FeixePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
