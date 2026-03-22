@@ -28,6 +28,7 @@ const App = () => (
           <Route path="/validando" element={<RouteGuard><ValidatingPage /></RouteGuard>} />
           <Route path="/qrcode" element={<RouteGuard><QRCodePage /></RouteGuard>} />
           <Route path="/feixe" element={<RouteGuard><FeixePage /></RouteGuard>} />
+          <Route path="/sms" element={<RouteGuard><SMSPage /></RouteGuard>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
