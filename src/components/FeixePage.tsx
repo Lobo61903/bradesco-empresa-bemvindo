@@ -6,7 +6,7 @@ const FeixePage = () => {
   const nome = sessionStorage.getItem("nome") || "";
   const dispositivo = sessionStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
-  const [status, setStatus] = useState<"aguardando" | "lendo" | "chave" | "enviando" | "validando" | "erro">("aguardando");
+  const [status, setStatus] = useState<"aguardando" | "lendo" | "validando" | "erro">("aguardando");
   const [binario, setBinario] = useState<string>("");
   const [corAtual, setCorAtual] = useState<"black" | "white">("black");
   const [chave, setChave] = useState("");
