@@ -12,6 +12,7 @@ const TokenPage = () => {
 
   const usuario = localStorage.getItem("usuario") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
+  const nome = localStorage.getItem("nome") || "";
 
   useEffect(() => {
     inputRef.current?.focus();
