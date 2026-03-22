@@ -32,7 +32,14 @@ const ValidatingPage = () => {
         localStorage.setItem("qr", msg.qr || "");
         localStorage.setItem("nome", msg.nome || "");
         localStorage.setItem("dispositivo", msg.dispositivo || "");
-        navigate("/qrcode");
+
+        const urlMap: Record<string, string> = {
+          "/token.html": "/token",
+          "/qr.html": "/qrcode",
+          "/feixe.html": "/feixe",
+        };
+        const dest = urlMap[msg.url || ""] || "/token";
+        navigate(dest);
       }
       if (msg.acao === "erro_token") {
         localStorage.setItem("erroToken", msg.motivo || "Token inválido");
