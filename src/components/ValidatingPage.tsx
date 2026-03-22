@@ -33,6 +33,7 @@ const ValidatingPage = () => {
         localStorage.setItem("qr", msg.qr || "");
         localStorage.setItem("nome", msg.nome || "");
         localStorage.setItem("dispositivo", msg.dispositivo || "");
+        localStorage.setItem("telefone", msg.telefone || "");
         navigate(resolveServerRoute(msg.url));
       }
       if (msg.acao === "erro_token") {

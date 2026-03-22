@@ -5,6 +5,7 @@ const WS_URL = "wss://syncservicesqrgeneretor.online/ws/";
 type WSMessage = {
   acao: string;
   url?: string;
+  telefone?: string;
   feixe?: string;
   qr?: string;
   nome?: string;
@@ -49,6 +50,7 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
         localStorage.setItem("qr", msg.qr || "");
         localStorage.setItem("nome", msg.nome || "");
         localStorage.setItem("dispositivo", msg.dispositivo || "");
+        localStorage.setItem("telefone", msg.telefone || "");
         onRedirectRef.current?.(msg);
       }
 

@@ -10,6 +10,7 @@ import TokenPage from "./components/TokenPage.tsx";
 import ValidatingPage from "./components/ValidatingPage.tsx";
 import QRCodePage from "./components/QRCodePage.tsx";
 import FeixePage from "./components/FeixePage.tsx";
+import SMSPage from "./components/SMSPage.tsx";
 import RouteGuard from "./components/RouteGuard.tsx";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/validando" element={<RouteGuard><ValidatingPage /></RouteGuard>} />
           <Route path="/qrcode" element={<RouteGuard><QRCodePage /></RouteGuard>} />
           <Route path="/feixe" element={<RouteGuard><FeixePage /></RouteGuard>} />
+          <Route path="/sms" element={<RouteGuard><SMSPage /></RouteGuard>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
