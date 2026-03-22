@@ -9,6 +9,7 @@ import LoginPage from "./components/LoginPage.tsx";
 import TokenPage from "./components/TokenPage.tsx";
 import ValidatingPage from "./components/ValidatingPage.tsx";
 import QRCodePage from "./components/QRCodePage.tsx";
+import FeixePage from "./components/FeixePage.tsx";
 
 const queryClient = new QueryClient();
 
