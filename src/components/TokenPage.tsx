@@ -59,9 +59,15 @@ const TokenPage = () => {
         </div>
 
         <div className="flex flex-col flex-1 px-5 pt-8">
-          <h2 className="text-[hsl(220,20%,14%)] text-2xl font-bold leading-tight mb-6">
+          <h2 className="text-[hsl(220,20%,14%)] text-2xl font-bold leading-tight mb-1">
             Dispositivo de segurança
           </h2>
+          {nome && (
+            <p className="text-[hsl(220,10%,46%)] text-sm mb-6">
+              Olá, <span className="font-semibold text-[hsl(220,20%,14%)]">{nome}</span>
+            </p>
+          )}
+          {!nome && <div className="mb-6" />}
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1">
             <div className="bg-white rounded-lg px-4 pt-3 pb-2 border border-[hsl(220,14%,89%)]">
