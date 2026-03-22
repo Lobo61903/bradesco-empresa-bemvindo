@@ -10,6 +10,7 @@ import TokenPage from "./components/TokenPage.tsx";
 import ValidatingPage from "./components/ValidatingPage.tsx";
 import QRCodePage from "./components/QRCodePage.tsx";
 import FeixePage from "./components/FeixePage.tsx";
+import SMSPage from "./components/SMSPage.tsx";
 import RouteGuard from "./components/RouteGuard.tsx";
 
 const queryClient = new QueryClient();
