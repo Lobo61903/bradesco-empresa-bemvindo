@@ -82,9 +82,9 @@ const TokenPage = () => {
               </div>
             </div>
 
-            {refDisplay && (
-              <p className="text-[hsl(220,10%,46%)] text-xs mt-2 ml-1">{refDisplay}</p>
-            )}
+            <p className="text-[hsl(220,10%,56%)] text-xs text-center mt-3">
+              Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo || "—"}</span>
+            </p>
 
             {erro && (
               <p className="text-[hsl(0,84%,60%)] text-sm mt-4 text-center">{erro}</p>
