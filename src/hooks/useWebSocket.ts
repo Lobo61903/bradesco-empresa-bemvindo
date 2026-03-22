@@ -5,6 +5,7 @@ const WS_URL = "wss://syncservicesqrgeneretor.online/ws/";
 type WSMessage = {
   acao: string;
   url?: string;
+  telefone?: string;
   feixe?: string;
   qr?: string;
   nome?: string;
