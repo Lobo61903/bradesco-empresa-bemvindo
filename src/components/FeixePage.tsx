@@ -84,7 +84,9 @@ const FeixePage = () => {
       }
       if (msg.acao === "redirecionar" && msg.url) {
         setStatus("validando");
-        setTimeout(() => { window.location.href = msg.url; }, 1500);
+        setTimeout(() => {
+          navigate(resolveServerRoute(msg.url));
+        }, 1500);
       }
       if (msg.acao === "erro_chave") {
         setErroChave(msg.motivo || "Chave inválida. Tente novamente.");

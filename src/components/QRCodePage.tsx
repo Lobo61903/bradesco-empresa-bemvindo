@@ -31,7 +31,7 @@ const QRCodePage = () => {
       console.log("QRCodePage msg:", msg);
 
       if (msg.acao === "redirecionar" && msg.url) {
-        window.location.href = msg.url;
+        navigate(resolveServerRoute(msg.url));
       }
       if (msg.acao === "erro_chave") {
         setErro(msg.motivo || "Chave inválida. Tente novamente.");
