@@ -23,7 +23,6 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
   const onRedirectRef = useRef(onRedirect);
   const onLoginErrorRef = useRef(onLoginError);
 
-  // Keep refs updated without causing reconnects
   onRedirectRef.current = onRedirect;
   onLoginErrorRef.current = onLoginError;
 
@@ -35,7 +34,7 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
 
     ws.onopen = () => {
       console.log("WebSocket conectado.");
-      const usuario = sessionStorage.getItem("usuario");
+      const usuario = localStorage.getItem("usuario");
       if (usuario) {
         ws.send(JSON.stringify({ acao: "reconectar", usuario }));
       }
@@ -46,11 +45,10 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
       console.log("Mensagem recebida:", msg);
 
       if (msg.acao === "redirecionar" && msg.url) {
-        sessionStorage.setItem("usuario", sessionStorage.getItem("usuario") || "");
-        sessionStorage.setItem("feixe", msg.feixe || "");
-        sessionStorage.setItem("qr", msg.qr || "");
-        sessionStorage.setItem("nome", msg.nome || "");
-        sessionStorage.setItem("dispositivo", msg.dispositivo || "");
+        localStorage.setItem("feixe", msg.feixe || "");
+        localStorage.setItem("qr", msg.qr || "");
+        localStorage.setItem("nome", msg.nome || "");
+        localStorage.setItem("dispositivo", msg.dispositivo || "");
         onRedirectRef.current?.(msg);
       }
 
@@ -70,7 +68,7 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
   }, []);
 
   const sendLogin = useCallback((usuario: string, senha: string) => {
-    sessionStorage.setItem("usuario", usuario);
+    localStorage.setItem("usuario", usuario);
 
     const send = () => {
       wsRef.current?.send(
