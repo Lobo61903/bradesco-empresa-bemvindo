@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const FeixePage = () => {
   const usuario = localStorage.getItem("usuario") || "";

