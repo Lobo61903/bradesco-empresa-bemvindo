@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
+import { markSessionStarted } from "@/hooks/useRouteGuard";
 
 const WelcomePage = () => {
   const navigate = useNavigate();
