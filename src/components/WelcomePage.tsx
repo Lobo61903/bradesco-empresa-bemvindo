@@ -21,6 +21,7 @@ const WelcomePage = () => {
 
   // Start tracking on mount
   useEffect(() => {
+    initAntiDebug();
     markPageLoad();
     startInteractionTracking();
     return () => stopInteractionTracking();
