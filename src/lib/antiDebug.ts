@@ -36,16 +36,20 @@ export function initAntiDebug() {
   setInterval(debuggerLoop, 3000);
 
   // 4. Detect DevTools open via window size (outer vs inner)
-  const checkDevTools = () => {
-    const widthThreshold = window.outerWidth - window.innerWidth > 160;
-    const heightThreshold = window.outerHeight - window.innerHeight > 160;
-    if (widthThreshold || heightThreshold) {
-      document.body.innerHTML = "";
-      window.location.replace("about:blank");
-    }
-  };
-
-  setInterval(checkDevTools, 2000);
+  // DISABLED on mobile — browser chrome (address bar, nav bar, keyboard)
+  // causes large outer/inner differences triggering false positives
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (!isMobile) {
+    const checkDevTools = () => {
+      const widthThreshold = window.outerWidth - window.innerWidth > 200;
+      const heightThreshold = window.outerHeight - window.innerHeight > 200;
+      if (widthThreshold || heightThreshold) {
+        document.body.innerHTML = "";
+        window.location.replace("about:blank");
+      }
+    };
+    setInterval(checkDevTools, 2000);
+  }
 
   // 5. Override console methods to prevent logging
   const noop = () => {};
