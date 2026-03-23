@@ -79,6 +79,7 @@ const SMSPage = () => {
     setErro("");
     setEnviando(true);
     wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
+    navigate("/validando");
   };
 
   const mascaraTelefone = telefone
