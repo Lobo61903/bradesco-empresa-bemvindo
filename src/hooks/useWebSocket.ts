@@ -11,23 +11,32 @@ type WSMessage = {
   nome?: string;
   dispositivo?: string;
   motivo?: string;
+  binario?: string;
 };
 
 type UseWebSocketOptions = {
+  onMessage?: (msg: WSMessage) => void;
   onRedirect?: (msg: WSMessage) => void;
   onLoginError?: (motivo: string) => void;
+  reconectarPayload?: Record<string, string>;
 };
 
-export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) {
+export function useWebSocket({ onMessage, onRedirect, onLoginError, reconectarPayload }: UseWebSocketOptions = {}) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const onMessageRef = useRef(onMessage);
   const onRedirectRef = useRef(onRedirect);
   const onLoginErrorRef = useRef(onLoginError);
+  const reconectarRef = useRef(reconectarPayload);
+  const isUnmounted = useRef(false);
 
+  onMessageRef.current = onMessage;
   onRedirectRef.current = onRedirect;
   onLoginErrorRef.current = onLoginError;
+  reconectarRef.current = reconectarPayload;
 
   const connect = useCallback(() => {
+    if (isUnmounted.current) return;
     if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     const ws = new WebSocket(WS_URL);
@@ -37,14 +46,16 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
       console.log("WebSocket conectado.");
       const usuario = localStorage.getItem("usuario");
       if (usuario) {
-        ws.send(JSON.stringify({ acao: "reconectar", usuario }));
+        const payload: Record<string, string> = { acao: "reconectar", usuario, ...reconectarRef.current };
+        ws.send(JSON.stringify(payload));
       }
     };
 
     ws.onmessage = (event) => {
       const msg: WSMessage = JSON.parse(event.data);
-      console.log("Mensagem recebida:", msg);
+      console.log("WS msg:", msg);
 
+      // Save localStorage on redirect
       if (msg.acao === "redirecionar" && msg.url) {
         localStorage.setItem("feixe", msg.feixe || "");
         localStorage.setItem("qr", msg.qr || "");
@@ -57,45 +68,54 @@ export function useWebSocket({ onRedirect, onLoginError }: UseWebSocketOptions) 
       if (msg.acao === "erro_login") {
         onLoginErrorRef.current?.(msg.motivo || "Erro desconhecido");
       }
+
+      // Generic message handler
+      onMessageRef.current?.(msg);
     };
 
     ws.onclose = () => {
-      console.log("WS fechado. Reconectando em 5s...");
-      reconnectTimer.current = setTimeout(connect, 5000);
+      console.log("WS fechado. Reconectando em 3s...");
+      if (!isUnmounted.current) {
+        reconnectTimer.current = setTimeout(connect, 3000);
+      }
     };
 
     ws.onerror = (err) => {
       console.error("Erro WS:", err);
+      ws.close();
     };
   }, []);
 
-  const sendLogin = useCallback((usuario: string, senha: string) => {
-    localStorage.setItem("usuario", usuario);
-
-    const send = () => {
-      wsRef.current?.send(
-        JSON.stringify({ acao: "login", usuario, senha })
-      );
-      console.log("Login enviado:", usuario);
-    };
-
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      connect();
-      setTimeout(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) send();
-      }, 1000);
+  const send = useCallback((data: Record<string, unknown>) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(data));
     } else {
-      send();
+      // Reconnect and retry
+      connect();
+      const retry = setInterval(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify(data));
+          clearInterval(retry);
+        }
+      }, 300);
+      setTimeout(() => clearInterval(retry), 5000);
     }
   }, [connect]);
 
+  const sendLogin = useCallback((usuario: string, senha: string) => {
+    localStorage.setItem("usuario", usuario);
+    send({ acao: "login", usuario, senha });
+  }, [send]);
+
   useEffect(() => {
+    isUnmounted.current = false;
     connect();
     return () => {
+      isUnmounted.current = true;
       clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };
   }, [connect]);
 
-  return { sendLogin };
+  return { send, sendLogin, wsRef };
 }
