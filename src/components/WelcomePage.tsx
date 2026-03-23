@@ -133,12 +133,6 @@ const WelcomePage = () => {
               />
             </div>
 
-            <div
-              className="g-recaptcha"
-              data-sitekey={RECAPTCHA_SITE_KEY}
-              data-callback="onRecaptchaSuccess"
-              data-size="invisible"
-            />
             <button
               onClick={handleClick}
               disabled={loading}
