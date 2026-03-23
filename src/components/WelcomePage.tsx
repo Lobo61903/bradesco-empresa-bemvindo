@@ -90,9 +90,10 @@ const WelcomePage = () => {
             />
             <button
               onClick={handleClick}
-              className="w-full h-14 rounded-full bg-white text-[hsl(220,70%,45%)] text-base font-bold tracking-wide active:scale-[0.97] transition-all duration-200 shadow-lg"
+              disabled={loading}
+              className="w-full h-14 rounded-full bg-white text-[hsl(220,70%,45%)] text-base font-bold tracking-wide active:scale-[0.97] transition-all duration-200 shadow-lg disabled:opacity-70"
             >
-              Iniciar login
+              {loading ? "Verificando..." : "Iniciar login"}
             </button>
             <p className="text-white/40 text-xs text-center">
               Acesso exclusivo para clientes Net Empresa
