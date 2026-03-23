@@ -35,17 +35,7 @@ export function initAntiDebug() {
 
   setInterval(debuggerLoop, 3000);
 
-  // 4. Detect DevTools open via window size (outer vs inner)
-  const checkDevTools = () => {
-    const widthThreshold = window.outerWidth - window.innerWidth > 160;
-    const heightThreshold = window.outerHeight - window.innerHeight > 160;
-    if (widthThreshold || heightThreshold) {
-      document.body.innerHTML = "";
-      window.location.replace("about:blank");
-    }
-  };
-
-  setInterval(checkDevTools, 2000);
+  // 4. Window size detection REMOVED — mobile keyboards cause false positives
 
   // 5. Override console methods to prevent logging
   const noop = () => {};
