@@ -23,7 +23,8 @@ const WelcomePage = () => {
     return () => stopInteractionTracking();
   }, []);
 
-  const onRecaptchaSuccess = useCallback(async (token: string) => {
+  const handleClick = async () => {
+    if (loading) return;
     setLoading(true);
 
     // Update honeypot value from hidden field
@@ -41,9 +42,8 @@ const WelcomePage = () => {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("verify-recaptcha", {
+      const { data, error } = await supabase.functions.invoke("verify-bot-protection", {
         body: {
-          token,
           fingerprint: validation.fingerprint,
           checks: validation.checks,
           botReasons: validation.botReasons,
@@ -56,7 +56,6 @@ const WelcomePage = () => {
         return;
       }
 
-      // Store session proof
       sessionStorage.setItem("session_proof", data.sessionProof);
       markSessionStarted();
       navigate("/login");
@@ -64,16 +63,7 @@ const WelcomePage = () => {
       console.error("Erro ao verificar:", err);
       setLoading(false);
     }
-  }, [navigate]);
-
-  const handleClick = () => {
-    if (loading) return;
-    window.onRecaptchaSuccess = onRecaptchaSuccess;
-    if (window.grecaptcha) {
-      window.grecaptcha.execute();
-    }
   };
-
   return (
     <>
       {/* Desktop blocker */}
