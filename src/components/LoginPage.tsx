@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const navigate = useNavigate();
 
   const { sendLogin } = useWebSocket({
