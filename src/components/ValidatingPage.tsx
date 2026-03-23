@@ -14,12 +14,7 @@ const ValidatingPage = () => {
 
     ws.onopen = () => {
       console.log("ValidatingPage WS conectado");
-
-      const pendingToken = localStorage.getItem("pendingToken");
-      if (pendingToken) {
-        localStorage.removeItem("pendingToken");
-        ws.send(JSON.stringify({ acao: "token", usuario, token: pendingToken }));
-      } else if (usuario) {
+      if (usuario) {
         ws.send(JSON.stringify({ acao: "reconectar", usuario }));
       }
     };

@@ -73,7 +73,7 @@ const QRCodePage = () => {
     if (!chaveCompleta) return;
     setErro("");
     setEnviando(true);
-    localStorage.setItem("pendingToken", chave.join(""));
+    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
     navigate("/validando");
   };
 

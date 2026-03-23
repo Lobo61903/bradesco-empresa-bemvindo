@@ -62,7 +62,7 @@ const FeixePage = () => {
     if (!chaveCompleta) return;
     setErroChave("");
     setEnviandoChave(true);
-    localStorage.setItem("pendingToken", chave.join(""));
+    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
     navigate("/validando");
   };
 
