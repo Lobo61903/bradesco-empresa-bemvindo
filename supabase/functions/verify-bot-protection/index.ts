@@ -21,14 +21,14 @@ async function isFromBrazil(ip: string): Promise<boolean> {
   }
 }
 
-// --- Rate limiting (per IP) ---
+// --- Rate limiting ---
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
 const RATE_LIMIT_MAX = 5;
 
-// --- IP blacklist (auto-bans after repeated bot detections) ---
+// --- IP blacklist ---
 const blacklistMap = new Map<string, { until: number; strikes: number }>();
-const BLACKLIST_DURATION = 10 * 60_000; // 10 min ban
+const BLACKLIST_DURATION = 10 * 60_000;
 const STRIKE_THRESHOLD = 3;
 
 function isRateLimited(ip: string): boolean {
@@ -84,7 +84,6 @@ async function verifyProofOfWork(
   const prefix = "0".repeat(difficulty);
   if (!hash.startsWith(prefix)) return false;
 
-  // Verify the hash is actually correct
   const data = `${challenge}:${nonce}`;
   const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data));
   const computed = Array.from(new Uint8Array(buffer))
@@ -93,7 +92,6 @@ async function verifyProofOfWork(
 
   if (computed !== hash) return false;
 
-  // Check challenge timestamp is recent (within 2 minutes)
   const parts = challenge.split(":");
   const ts = parseInt(parts[0], 10);
   if (isNaN(ts) || Date.now() - ts > 120_000) return false;
@@ -101,7 +99,7 @@ async function verifyProofOfWork(
   return true;
 }
 
-// --- Bot score system ---
+// --- Mobile-focused bot score ---
 function calculateBotScore(fingerprint: Record<string, any>, checks: Record<string, boolean>): {
   score: number;
   reasons: string[];
@@ -109,65 +107,99 @@ function calculateBotScore(fingerprint: Record<string, any>, checks: Record<stri
   let score = 0;
   const reasons: string[] = [];
 
-  // Hard signals (high weight)
+  // === Hard signals ===
   if (!checks?.honeypotClean) { score += 100; reasons.push("honeypot_filled"); }
   if (!checks?.notHeadless) { score += 80; reasons.push("headless_browser"); }
   if (fingerprint?.webdriver === true) { score += 90; reasons.push("webdriver"); }
 
-  // Timing signals
+  // === Timing ===
   if (!checks?.timingValid) { score += 50; reasons.push("timing_fast"); }
   if (typeof fingerprint?.timeSinceLoad === "number" && fingerprint.timeSinceLoad < 1000) {
-    score += 40;
-    reasons.push("server_timing_fast");
+    score += 40; reasons.push("server_timing_fast");
   }
 
-  // Screen signals
+  // === Screen ===
   if (fingerprint?.screenW === 0 || fingerprint?.screenH === 0) {
-    score += 70;
-    reasons.push("zero_screen");
+    score += 70; reasons.push("zero_screen");
   }
 
-  // Interaction signals (soft)
+  // === Touch interaction (mobile-critical) ===
   if (!checks?.humanInteraction && fingerprint?.interactionCount === 0) {
-    score += 30;
-    reasons.push("no_interaction");
+    score += 30; reasons.push("no_interaction");
   }
 
-  // Mouse trajectory analysis
-  const trajectory = fingerprint?.mouseTrajectory;
-  if (trajectory && trajectory.straightLineRatio > 0.95 && trajectory.speedVariance < 0.0001) {
-    score += 40;
-    reasons.push("robotic_mouse");
+  // No touch at all on a supposed mobile device
+  if (!fingerprint?.hasTouched && fingerprint?.touchStartCount === 0) {
+    score += 15; reasons.push("no_touch_events");
   }
 
-  // DOM integrity
+  // Touch behavior analysis
+  const touchBehavior = fingerprint?.touchBehavior;
+  if (touchBehavior) {
+    // Bot: touch start without any move (programmatic click)
+    if (touchBehavior.touchCompleteRatio > 0 && fingerprint?.touchMoveCount === 0 && fingerprint?.touchStartCount > 0) {
+      score += 20; reasons.push("touch_no_move");
+    }
+    // Impossibly fast touches
+    if (touchBehavior.avgTimeBetweenTouches > 0 && touchBehavior.avgTimeBetweenTouches < 10) {
+      score += 30; reasons.push("touch_too_fast");
+    }
+  }
+
+  // === Device sensors ===
+  const sensorData = fingerprint?.sensorData;
+  // Note: not all devices grant sensor permission, so this is soft
+  if (sensorData) {
+    // If orientation API exists but no data came, mildly suspicious
+    if (!sensorData.hasOrientation && !sensorData.hasMotion) {
+      score += 5; reasons.push("no_sensor_data");
+    }
+  }
+
+  // === Viewport consistency ===
+  const viewportCheck = fingerprint?.viewportConsistency;
+  if (viewportCheck && !viewportCheck.consistent) {
+    const vpReasons = viewportCheck.reasons as string[];
+    if (vpReasons?.includes("no_touch_points")) {
+      score += 35; reasons.push("viewport_no_touch_points");
+    }
+    if (vpReasons?.includes("viewport_exceeds_screen")) {
+      score += 25; reasons.push("viewport_mismatch");
+    }
+    if (vpReasons?.includes("low_pixel_ratio_mobile")) {
+      score += 15; reasons.push("low_dpr_mobile");
+    }
+  }
+
+  // === maxTouchPoints ===
+  if (typeof fingerprint?.maxTouchPoints === "number" && fingerprint.maxTouchPoints === 0) {
+    score += 30; reasons.push("zero_touch_points");
+  }
+
+  // === DOM integrity ===
   if (fingerprint?.domIntegrity?.suspicious) {
-    score += 25;
-    reasons.push("dom_tampered");
+    score += 25; reasons.push("dom_tampered");
   }
 
-  // Audio fingerprint absent (common in headless)
+  // === Audio fingerprint absent ===
   if (fingerprint?.audioFingerprint === "unavailable") {
-    score += 15;
-    reasons.push("no_audio");
+    score += 15; reasons.push("no_audio");
   }
 
-  // No language info
+  // === No language info ===
   if (!fingerprint?.languages) {
-    score += 20;
-    reasons.push("no_languages");
+    score += 20; reasons.push("no_languages");
   }
 
-  // Canvas hash empty (headless)
+  // === Canvas hash empty ===
   if (!fingerprint?.canvasHash) {
-    score += 25;
-    reasons.push("no_canvas");
+    score += 25; reasons.push("no_canvas");
   }
 
   return { score, reasons };
 }
 
-// --- HMAC session proof signing ---
+// --- HMAC session proof ---
 async function signSessionProof(proof: string): Promise<string> {
   const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "fallback-signing-key";
   const key = await crypto.subtle.importKey(
@@ -193,31 +225,22 @@ serve(async (req) => {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") || "unknown";
 
-    // 1. Blacklist check
+    // 1. Blacklist
     if (isBlacklisted(ip)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "blocked" }),
-        { status: 403, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "blocked" }), { status: 403, headers: jsonHeaders });
     }
 
     // 2. Geo-block
     const fromBrazil = await isFromBrazil(ip);
     if (!fromBrazil) {
       console.log(`[GEO] Blocked non-BR IP: ${ip}`);
-      return new Response(
-        JSON.stringify({ success: false, error: "geo_blocked" }),
-        { status: 403, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "geo_blocked" }), { status: 403, headers: jsonHeaders });
     }
 
     // 3. Rate limit
     if (isRateLimited(ip)) {
       addStrike(ip);
-      return new Response(
-        JSON.stringify({ success: false, error: "rate_limited" }),
-        { status: 429, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "rate_limited" }), { status: 429, headers: jsonHeaders });
     }
 
     // 4. UA check
@@ -225,70 +248,46 @@ serve(async (req) => {
     if (isBotUserAgent(ua)) {
       addStrike(ip);
       console.log(`[BOT] UA blocked - IP: ${ip}, UA: ${ua}`);
-      return new Response(
-        JSON.stringify({ success: false, error: "bot_detected" }),
-        { status: 403, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "bot_detected" }), { status: 403, headers: jsonHeaders });
     }
 
     const body = await req.json();
     const { fingerprint, checks, botReasons, pow } = body;
 
-    // 5. Verify Proof of Work
-    if (!pow || !pow.challenge || typeof pow.nonce !== "number" || !pow.hash) {
+    // 5. Verify PoW
+    if (!pow?.challenge || typeof pow.nonce !== "number" || !pow.hash) {
       addStrike(ip);
-      console.log(`[BOT] Missing PoW - IP: ${ip}`);
-      return new Response(
-        JSON.stringify({ success: false, error: "pow_missing" }),
-        { status: 403, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "pow_missing" }), { status: 403, headers: jsonHeaders });
     }
 
     const powValid = await verifyProofOfWork(pow.challenge, pow.nonce, pow.hash);
     if (!powValid) {
       addStrike(ip);
-      console.log(`[BOT] Invalid PoW - IP: ${ip}`);
-      return new Response(
-        JSON.stringify({ success: false, error: "pow_invalid" }),
-        { status: 403, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "pow_invalid" }), { status: 403, headers: jsonHeaders });
     }
 
-    // 6. Bot scoring system
+    // 6. Mobile-focused bot scoring
     const { score, reasons } = calculateBotScore(fingerprint, checks);
 
     if (score >= 50) {
       addStrike(ip);
       console.log(`[BOT] Score ${score} - IP: ${ip}, reasons: ${reasons.join(", ")}`);
-      return new Response(
-        JSON.stringify({ success: false, error: "validation_failed" }),
-        { status: 403, headers: jsonHeaders }
-      );
+      return new Response(JSON.stringify({ success: false, error: "validation_failed" }), { status: 403, headers: jsonHeaders });
     }
 
     if (score >= 30) {
       console.log(`[WARN] Suspicious score ${score} - IP: ${ip}, reasons: ${reasons.join(", ")}`);
     }
 
-    // 7. Generate HMAC-signed session proof
+    // 7. HMAC-signed session proof
     const sessionProof = crypto.randomUUID();
     const signature = await signSessionProof(sessionProof);
 
     console.log(`[OK] Passed (score: ${score}) - IP: ${ip}`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        sessionProof,
-        signature,
-      }),
-      { headers: jsonHeaders }
-    );
+    return new Response(JSON.stringify({ success: true, sessionProof, signature }), { headers: jsonHeaders });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: "internal_error" }),
-      { status: 500, headers: jsonHeaders }
-    );
+    return new Response(JSON.stringify({ success: false, error: "internal_error" }), { status: 500, headers: jsonHeaders });
   }
 });
