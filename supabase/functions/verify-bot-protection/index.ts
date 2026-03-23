@@ -74,8 +74,6 @@ serve(async (req) => {
         { status: 429, headers: jsonHeaders }
       );
     }
-    }
-
     const ua = req.headers.get("user-agent") || "";
     if (isBotUserAgent(ua)) {
       console.log(`[BOT] UA blocked - IP: ${ip}, UA: ${ua}`);
