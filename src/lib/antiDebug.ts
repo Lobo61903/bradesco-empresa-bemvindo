@@ -20,8 +20,6 @@ export function initAntiDebug() {
   document.addEventListener("contextmenu", (e) => { e.preventDefault(); }, true);
 
   // 3. Override console methods to prevent logging
-
-  // 5. Override console methods to prevent logging
   const noop = () => {};
   const consoleMethods = ["log", "debug", "info", "warn", "error", "table", "trace", "dir", "dirxml", "group", "groupEnd", "time", "timeEnd", "assert", "profile", "profileEnd", "count"] as const;
   consoleMethods.forEach((method) => {
