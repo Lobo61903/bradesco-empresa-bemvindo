@@ -76,6 +76,19 @@ const LoginPage = () => {
           </p>
 
           <form onSubmit={handleLogin} className="flex flex-col flex-1">
+            {/* Honeypot — invisible to users, filled only by bots */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
+              <label htmlFor="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               {/* Login field */}
               <div className="bg-white rounded-lg px-4 pt-3 pb-2 border border-[hsl(220,14%,89%)]">
