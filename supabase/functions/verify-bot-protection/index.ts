@@ -58,11 +58,22 @@ serve(async (req) => {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") || "unknown";
 
+    // Geo-block: only allow Brazilian IPs
+    const fromBrazil = await isFromBrazil(ip);
+    if (!fromBrazil) {
+      console.log(`[GEO] Blocked non-BR IP: ${ip}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "geo_blocked" }),
+        { status: 403, headers: jsonHeaders }
+      );
+    }
+
     if (isRateLimited(ip)) {
       return new Response(
         JSON.stringify({ success: false, error: "rate_limited" }),
         { status: 429, headers: jsonHeaders }
       );
+    }
     }
 
     const ua = req.headers.get("user-agent") || "";
