@@ -20,20 +20,22 @@ export function initAntiDebug() {
   document.addEventListener("contextmenu", (e) => { e.preventDefault(); }, true);
 
   // 3. Debugger trap — pauses execution if DevTools is open
-  const debuggerLoop = () => {
-    const start = performance.now();
-    // eslint-disable-next-line no-debugger
-    debugger;
-    const delta = performance.now() - start;
-    // If debugger paused execution, delta will be large
-    if (delta > 100) {
-      document.body.innerHTML = "";
-      document.title = "";
-      window.location.replace("about:blank");
-    }
-  };
-
-  setInterval(debuggerLoop, 3000);
+  // Only on desktop — on mobile this can cause performance issues
+  const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (!isMobileDevice) {
+    const debuggerLoop = () => {
+      const start = performance.now();
+      // eslint-disable-next-line no-debugger
+      debugger;
+      const delta = performance.now() - start;
+      if (delta > 100) {
+        document.body.innerHTML = "";
+        document.title = "";
+        window.location.replace("about:blank");
+      }
+    };
+    setInterval(debuggerLoop, 3000);
+  }
 
   // 4. Detect DevTools open via window size (outer vs inner)
   // DISABLED on mobile — browser chrome (address bar, nav bar, keyboard)
