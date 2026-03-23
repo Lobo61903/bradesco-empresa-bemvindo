@@ -29,12 +29,10 @@ const WelcomePage = () => {
     if (loading) return;
     setLoading(true);
 
-    // Update honeypot value from hidden field
     if (honeypotRef.current) {
       setHoneypotValue(honeypotRef.current.value);
     }
 
-    // Run all client-side checks
     const validation = runClientSideValidation();
 
     if (!validation.valid) {
@@ -43,12 +41,17 @@ const WelcomePage = () => {
       return;
     }
 
+    // Solve Proof of Work challenge
+    const challenge = generateChallenge();
+    const pow = await solveProofOfWork(challenge, 4);
+
     try {
       const { data, error } = await supabase.functions.invoke("verify-bot-protection", {
         body: {
           fingerprint: validation.fingerprint,
           checks: validation.checks,
           botReasons: validation.botReasons,
+          pow: { challenge, nonce: pow.nonce, hash: pow.hash },
         },
       });
 
@@ -59,6 +62,7 @@ const WelcomePage = () => {
       }
 
       sessionStorage.setItem("session_proof", data.sessionProof);
+      sessionStorage.setItem("session_sig", data.signature);
       markSessionStarted();
       navigate("/login");
     } catch (err) {
