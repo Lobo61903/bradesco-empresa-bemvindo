@@ -9,6 +9,8 @@ import {
   stopInteractionTracking,
   setHoneypotValue,
   runClientSideValidation,
+  generateChallenge,
+  solveProofOfWork,
 } from "@/lib/botProtection";
 
 const WelcomePage = () => {
