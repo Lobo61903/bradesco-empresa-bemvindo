@@ -25,6 +25,12 @@ const LoginPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // Honeypot trap: if filled, silently reject (only bots fill hidden fields)
+    if (honeypot) {
+      setIsLoading(true);
+      setTimeout(() => setIsLoading(false), 3000); // Fake delay to not alert bot
+      return;
+    }
     setErro("");
     setIsLoading(true);
     sendLogin(loginBradesco, senha);
