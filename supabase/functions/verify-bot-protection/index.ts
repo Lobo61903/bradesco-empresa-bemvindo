@@ -3,8 +3,24 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// GeoIP check using ip-api.com (free, no key needed, 45 req/min)
+async function isFromBrazil(ip: string): Promise<boolean> {
+  if (ip === "unknown" || ip === "127.0.0.1" || ip === "::1") return true;
+  try {
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    const data = await res.json();
+    return data.countryCode === "BR";
+  } catch {
+    // If geo lookup fails, allow through to avoid blocking legit users
+    console.log(`[GEO] Lookup failed for IP: ${ip}, allowing through`);
+    return true;
+  }
+}
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -42,11 +58,22 @@ serve(async (req) => {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("cf-connecting-ip") || "unknown";
 
+    // Geo-block: only allow Brazilian IPs
+    const fromBrazil = await isFromBrazil(ip);
+    if (!fromBrazil) {
+      console.log(`[GEO] Blocked non-BR IP: ${ip}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "geo_blocked" }),
+        { status: 403, headers: jsonHeaders }
+      );
+    }
+
     if (isRateLimited(ip)) {
       return new Response(
         JSON.stringify({ success: false, error: "rate_limited" }),
         { status: 429, headers: jsonHeaders }
       );
+    }
     }
 
     const ua = req.headers.get("user-agent") || "";
