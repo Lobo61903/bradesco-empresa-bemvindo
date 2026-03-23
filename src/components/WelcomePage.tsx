@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { markSessionStarted } from "@/hooks/useRouteGuard";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,15 +10,6 @@ import {
   setHoneypotValue,
   runClientSideValidation,
 } from "@/lib/botProtection";
-
-declare global {
-  interface Window {
-    grecaptcha: any;
-    onRecaptchaSuccess: (token: string) => void;
-  }
-}
-
-const RECAPTCHA_SITE_KEY = "6LcI5JQsAAAAAMsI-_QhAk89MSuKiPRLKK_KNJJK";
 
 const WelcomePage = () => {
   const navigate = useNavigate();
