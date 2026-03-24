@@ -22,7 +22,7 @@ const FeixePage = () => {
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
       const route = resolveServerRoute(msg.url);
-      if (route === "/token") {
+      if (route === "/erro-token") {
         setEnviandoChave(false);
         const erroSalvo = localStorage.getItem("erroToken");
         if (erroSalvo) {

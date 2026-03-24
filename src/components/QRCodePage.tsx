@@ -19,7 +19,7 @@ const QRCodePage = () => {
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
       const route = resolveServerRoute(msg.url);
-      if (route === "/token") {
+      if (route === "/erro-token") {
         setEnviando(false);
         const erroSalvo = localStorage.getItem("erroToken");
         if (erroSalvo) {
