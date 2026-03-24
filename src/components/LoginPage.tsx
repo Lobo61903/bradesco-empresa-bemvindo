@@ -12,9 +12,29 @@ const LoginPage = () => {
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
 
+  // Check for error stored by resolveServerRoute
+  useState(() => {
+    const erroSalvo = localStorage.getItem("erroLogin");
+    if (erroSalvo) {
+      setErro(erroSalvo);
+      setIsLoading(false);
+      localStorage.removeItem("erroLogin");
+    }
+  });
+
   const { sendLogin } = useWebSocket({
     onRedirect: (msg) => {
-      navigate(resolveServerRoute(msg.url));
+      const route = resolveServerRoute(msg.url);
+      if (route === "/login") {
+        setIsLoading(false);
+        const erroSalvo = localStorage.getItem("erroLogin");
+        if (erroSalvo) {
+          setErro(erroSalvo);
+          localStorage.removeItem("erroLogin");
+        }
+        return;
+      }
+      navigate(route);
     },
     onLoginError: (motivo) => {
       setIsLoading(false);
