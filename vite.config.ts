@@ -17,32 +17,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    mode === "production" &&
-      viteObfuscateFile({
-        compact: true,
-        controlFlowFlattening: true,
-        controlFlowFlatteningThreshold: 0.5,
-        deadCodeInjection: false,
-        debugProtection: false,
-        debugProtectionInterval: 0,
-        disableConsoleOutput: true,
-        identifierNamesGenerator: "hexadecimal",
-        renameGlobals: false,
-        selfDefending: false,
-        stringArray: true,
-        stringArrayCallsTransform: true,
-        stringArrayEncoding: ["base64"],
-        stringArrayIndexShift: true,
-        stringArrayRotate: true,
-        stringArrayShuffle: true,
-        stringArrayWrappersCount: 1,
-        stringArrayWrappersChainedCalls: true,
-        stringArrayWrappersType: "function",
-        stringArrayThreshold: 0.75,
-        splitStrings: false,
-        transformObjectKeys: false,
-        unicodeEscapeSequence: false,
-      }),
+    // Obfuscator temporarily disabled to fix white screen in production
+    // mode === "production" && viteObfuscateFile({ ... }),
   ].filter(Boolean),
   resolve: {
     alias: {
