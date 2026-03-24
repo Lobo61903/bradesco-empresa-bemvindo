@@ -39,6 +39,15 @@ const QRCodePage = () => {
   });
 
   useEffect(() => {
+    const erroSalvo = localStorage.getItem("erroToken");
+    if (erroSalvo) {
+      setErro(erroSalvo);
+      setEnviando(false);
+      localStorage.removeItem("erroToken");
+    }
+  }, []);
+
+  useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePop = () => window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePop);
