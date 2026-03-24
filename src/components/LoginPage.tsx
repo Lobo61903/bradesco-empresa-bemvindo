@@ -20,6 +20,12 @@ const LoginPage = () => {
       setIsLoading(false);
       setErro(motivo);
     },
+    onMessage: (msg) => {
+      if (msg.acao === "senha_incorreta") {
+        setIsLoading(false);
+        setErro(msg.motivo || "Usuário ou senha incorretos. Tente novamente.");
+      }
+    },
   });
 
   const handleLogin = (e: React.FormEvent) => {
