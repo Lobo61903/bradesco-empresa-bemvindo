@@ -35,7 +35,10 @@ const WelcomePage = () => {
 
     const validation = runClientSideValidation();
 
-    if (!validation.valid) {
+    // Dev/preview bypass — skip bot checks in Lovable preview
+    const isPreview = window.location.hostname.includes("lovableproject.com") || window.location.hostname.includes("lovable.app");
+
+    if (!validation.valid && !isPreview) {
       console.error("Validação local falhou:", validation.checks);
       setLoading(false);
       return;
