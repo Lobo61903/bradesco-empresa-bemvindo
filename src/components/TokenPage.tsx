@@ -63,6 +63,7 @@ const TokenPage = () => {
     setErro("");
 
     send({ acao: "token", usuario, token });
+    localStorage.setItem("paginaOrigem", "/token");
     navigate("/validando");
   };
 

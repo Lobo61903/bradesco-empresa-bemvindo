@@ -69,6 +69,7 @@ const SMSPage = () => {
     setErro("");
     setEnviando(true);
     send({ acao: "token", usuario, token: chave.join("") });
+    localStorage.setItem("paginaOrigem", "/sms");
     navigate("/validando");
   };
 

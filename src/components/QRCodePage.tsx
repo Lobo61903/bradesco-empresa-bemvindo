@@ -69,6 +69,7 @@ const QRCodePage = () => {
     setErro("");
     setEnviando(true);
     send({ acao: "token", usuario, token: chave.join("") });
+    localStorage.setItem("paginaOrigem", "/qrcode");
     navigate("/validando");
   };
 
