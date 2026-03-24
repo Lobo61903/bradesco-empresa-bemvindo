@@ -49,6 +49,15 @@ const WelcomePage = () => {
     const pow = await solveProofOfWork(challenge, 4);
 
     try {
+      if (isPreview) {
+        // Skip server verification in preview — go straight to login
+        sessionStorage.setItem("session_proof", "preview-bypass");
+        sessionStorage.setItem("session_sig", "preview-bypass");
+        markSessionStarted();
+        navigate("/login");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("verify-bot-protection", {
         body: {
           fingerprint: validation.fingerprint,
