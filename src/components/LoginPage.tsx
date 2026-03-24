@@ -106,12 +106,6 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              className="text-[hsl(220,70%,50%)] text-sm font-semibold mt-3 text-left"
-            >
-              Esqueci usuário/senha
-            </button>
 
             {erro && (
               <p className="text-[hsl(0,84%,60%)] text-sm mt-4 text-center">{erro}</p>
