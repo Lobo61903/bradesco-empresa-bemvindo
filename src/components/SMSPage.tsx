@@ -18,7 +18,17 @@ const SMSPage = () => {
   const { send } = useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
-      navigate(resolveServerRoute(msg.url));
+      const route = resolveServerRoute(msg.url);
+      if (route === "/erro-token") {
+        setEnviando(false);
+        const erroSalvo = localStorage.getItem("erroToken");
+        if (erroSalvo) {
+          setErro(erroSalvo);
+          localStorage.removeItem("erroToken");
+        }
+        return;
+      }
+      navigate(route);
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_chave") {

