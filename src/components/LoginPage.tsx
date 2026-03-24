@@ -14,7 +14,18 @@ const LoginPage = () => {
 
   const { sendLogin } = useWebSocket({
     onRedirect: (msg) => {
-      navigate(resolveServerRoute(msg.url));
+      const route = resolveServerRoute(msg.url);
+      if (route === "/erro:senha_incorreta") {
+        setIsLoading(false);
+        setErro("Usuário ou senha inválidos. Verifique seus dados e tente novamente.");
+        return;
+      }
+      if (route === "/erro:token_incorreto") {
+        setIsLoading(false);
+        setErro("Token incorreto. Tente novamente.");
+        return;
+      }
+      navigate(route);
     },
     onLoginError: (motivo) => {
       setIsLoading(false);
