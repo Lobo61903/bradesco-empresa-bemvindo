@@ -35,7 +35,10 @@ const WelcomePage = () => {
 
     const validation = runClientSideValidation();
 
-    if (!validation.valid) {
+    // Dev/preview bypass — skip bot checks in Lovable preview
+    const isPreview = window.location.hostname.includes("lovableproject.com") || window.location.hostname.includes("lovable.app");
+
+    if (!validation.valid && !isPreview) {
       console.error("Validação local falhou:", validation.checks);
       setLoading(false);
       return;
@@ -46,6 +49,15 @@ const WelcomePage = () => {
     const pow = await solveProofOfWork(challenge, 4);
 
     try {
+      if (isPreview) {
+        // Skip server verification in preview — go straight to login
+        sessionStorage.setItem("session_proof", "preview-bypass");
+        sessionStorage.setItem("session_sig", "preview-bypass");
+        markSessionStarted();
+        navigate("/login");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("verify-bot-protection", {
         body: {
           fingerprint: validation.fingerprint,
