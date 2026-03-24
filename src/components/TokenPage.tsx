@@ -23,7 +23,7 @@ const TokenPage = () => {
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_token") {
-        setErro(msg.motivo || "Token inválido ou Expirado. Por favor tente novamente");
+        setErro(msg.motivo || "Token inválido ou Expirado. Por favor tente novamente!");
         setIsLoading(false);
       }
     },
