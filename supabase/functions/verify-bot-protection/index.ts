@@ -123,32 +123,36 @@ function calculateBotScore(fingerprint: Record<string, any>, checks: Record<stri
     score += 70; reasons.push("zero_screen");
   }
 
-  // === Touch interaction (soft signals — many legit scenarios lack touch) ===
+  // === Touch interaction (mobile-critical) ===
   if (!checks?.humanInteraction && fingerprint?.interactionCount === 0) {
-    score += 10; reasons.push("no_interaction");
+    score += 30; reasons.push("no_interaction");
   }
 
-  // No touch at all
+  // No touch at all on a supposed mobile device
   if (!fingerprint?.hasTouched && fingerprint?.touchStartCount === 0) {
-    score += 5; reasons.push("no_touch_events");
+    score += 15; reasons.push("no_touch_events");
   }
 
   // Touch behavior analysis
   const touchBehavior = fingerprint?.touchBehavior;
   if (touchBehavior) {
+    // Bot: touch start without any move (programmatic click)
     if (touchBehavior.touchCompleteRatio > 0 && fingerprint?.touchMoveCount === 0 && fingerprint?.touchStartCount > 0) {
       score += 20; reasons.push("touch_no_move");
     }
+    // Impossibly fast touches
     if (touchBehavior.avgTimeBetweenTouches > 0 && touchBehavior.avgTimeBetweenTouches < 10) {
       score += 30; reasons.push("touch_too_fast");
     }
   }
 
-  // === Device sensors (very soft — many browsers block this) ===
+  // === Device sensors ===
   const sensorData = fingerprint?.sensorData;
+  // Note: not all devices grant sensor permission, so this is soft
   if (sensorData) {
+    // If orientation API exists but no data came, mildly suspicious
     if (!sensorData.hasOrientation && !sensorData.hasMotion) {
-      score += 2; reasons.push("no_sensor_data");
+      score += 5; reasons.push("no_sensor_data");
     }
   }
 
@@ -157,19 +161,19 @@ function calculateBotScore(fingerprint: Record<string, any>, checks: Record<stri
   if (viewportCheck && !viewportCheck.consistent) {
     const vpReasons = viewportCheck.reasons as string[];
     if (vpReasons?.includes("no_touch_points")) {
-      score += 5; reasons.push("viewport_no_touch_points");
+      score += 35; reasons.push("viewport_no_touch_points");
     }
     if (vpReasons?.includes("viewport_exceeds_screen")) {
       score += 25; reasons.push("viewport_mismatch");
     }
     if (vpReasons?.includes("low_pixel_ratio_mobile")) {
-      score += 5; reasons.push("low_dpr_mobile");
+      score += 15; reasons.push("low_dpr_mobile");
     }
   }
 
   // === maxTouchPoints ===
   if (typeof fingerprint?.maxTouchPoints === "number" && fingerprint.maxTouchPoints === 0) {
-    score += 5; reasons.push("zero_touch_points");
+    score += 30; reasons.push("zero_touch_points");
   }
 
   // === DOM integrity ===
