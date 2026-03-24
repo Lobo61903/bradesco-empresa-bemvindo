@@ -12,39 +12,13 @@ const LoginPage = () => {
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
 
-  // Check for error stored by resolveServerRoute
-  useState(() => {
-    const erroSalvo = localStorage.getItem("erroLogin");
-    if (erroSalvo) {
-      setErro(erroSalvo);
-      setIsLoading(false);
-      localStorage.removeItem("erroLogin");
-    }
-  });
-
   const { sendLogin } = useWebSocket({
     onRedirect: (msg) => {
-      const route = resolveServerRoute(msg.url);
-      if (route === "/login") {
-        setIsLoading(false);
-        const erroSalvo = localStorage.getItem("erroLogin");
-        if (erroSalvo) {
-          setErro(erroSalvo);
-          localStorage.removeItem("erroLogin");
-        }
-        return;
-      }
-      navigate(route);
+      navigate(resolveServerRoute(msg.url));
     },
     onLoginError: (motivo) => {
       setIsLoading(false);
       setErro(motivo);
-    },
-    onMessage: (msg) => {
-      if (msg.acao === "senha_incorreta") {
-        setIsLoading(false);
-        setErro(msg.motivo || "Usuário ou senha incorretos. Tente novamente.");
-      }
     },
   });
 
