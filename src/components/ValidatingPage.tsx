@@ -15,17 +15,8 @@ const ValidatingPage = () => {
     },
     onMessage: (msg) => {
       if (msg.acao === "erro_token") {
-        localStorage.setItem("erroToken", msg.mensagem || msg.motivo || "Token inválido");
+        localStorage.setItem("erroToken", msg.motivo || "Token inválido");
         navigate("/token");
-      }
-      if (msg.acao === "erro_chave") {
-        const origem = localStorage.getItem("paginaOrigem") || "/token";
-        localStorage.setItem("erroChave", msg.mensagem || msg.motivo || "Chave incorreta. Tente novamente.");
-        navigate(origem);
-      }
-      if (msg.acao === "senha_incorreta") {
-        localStorage.setItem("erroLogin", msg.mensagem || "Usuário ou senha incorretos.");
-        navigate("/login");
       }
     },
   });

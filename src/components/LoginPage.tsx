@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -21,15 +21,6 @@ const LoginPage = () => {
       setErro(motivo);
     },
   });
-
-  useEffect(() => {
-    const erroSalvo = localStorage.getItem("erroLogin");
-    if (erroSalvo) {
-      setErro(erroSalvo);
-      setIsLoading(false);
-      localStorage.removeItem("erroLogin");
-    }
-  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

