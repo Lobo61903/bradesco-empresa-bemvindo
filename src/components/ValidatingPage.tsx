@@ -18,6 +18,10 @@ const ValidatingPage = () => {
         localStorage.setItem("erroToken", msg.motivo || "Token inválido");
         navigate("/token");
       }
+      if (msg.acao === "erro_chave") {
+        localStorage.setItem("erroToken", msg.motivo || "Chave inválida");
+        navigate("/token");
+      }
     },
   });
 
