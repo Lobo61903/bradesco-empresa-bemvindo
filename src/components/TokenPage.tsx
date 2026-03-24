@@ -22,8 +22,8 @@ const TokenPage = () => {
       navigate(resolveServerRoute(msg.url));
     },
     onMessage: (msg) => {
-      if (msg.acao === "erro_token") {
-        setErro(msg.motivo || "Token inválido");
+      if (msg.acao === "erro_token" || msg.acao === "token_incorreto") {
+        setErro(msg.motivo || "Token inválido ou expirado. Solicite um novo.");
         setIsLoading(false);
       }
     },

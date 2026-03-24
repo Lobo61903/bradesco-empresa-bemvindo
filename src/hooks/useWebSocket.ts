@@ -12,6 +12,8 @@ type WSMessage = {
   dispositivo?: string;
   motivo?: string;
   binario?: string;
+  mensagem?: string;
+  usuario?: string;
 };
 
 type UseWebSocketOptions = {
