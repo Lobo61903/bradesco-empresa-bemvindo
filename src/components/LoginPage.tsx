@@ -22,6 +22,15 @@ const LoginPage = () => {
     },
   });
 
+  useEffect(() => {
+    const erroSalvo = localStorage.getItem("erroLogin");
+    if (erroSalvo) {
+      setErro(erroSalvo);
+      setIsLoading(false);
+      localStorage.removeItem("erroLogin");
+    }
+  }, []);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErro("");
