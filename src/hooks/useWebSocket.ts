@@ -11,6 +11,7 @@ type WSMessage = {
   nome?: string;
   dispositivo?: string;
   motivo?: string;
+  mensagem?: string;
   binario?: string;
 };
 
