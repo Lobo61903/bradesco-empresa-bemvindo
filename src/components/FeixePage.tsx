@@ -52,6 +52,15 @@ const FeixePage = () => {
     },
   });
 
+  useEffect(() => {
+    const erroSalvo = localStorage.getItem("erroToken");
+    if (erroSalvo) {
+      setErroChave(erroSalvo);
+      setEnviandoChave(false);
+      localStorage.removeItem("erroToken");
+    }
+  }, []);
+
   const iniciarLeitura = useCallback(() => {
     if (!binario) return;
     setStatus("lendo");
