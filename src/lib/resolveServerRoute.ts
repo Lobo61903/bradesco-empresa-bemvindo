@@ -9,7 +9,6 @@ export const resolveServerRoute = (url?: string) => {
     return "/login";
   }
   if (normalizedUrl.includes("token_incorreto")) {
-    localStorage.setItem("erroToken", "Token inválido. Tente novamente.");
     return "/erro-token";
   }
 
