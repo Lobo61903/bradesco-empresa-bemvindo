@@ -87,6 +87,7 @@ const FeixePage = () => {
     setErroChave("");
     setEnviandoChave(true);
     send({ acao: "token", usuario, token: chave.join("") });
+    localStorage.setItem("paginaOrigem", "/feixe");
     navigate("/validando");
   };
 

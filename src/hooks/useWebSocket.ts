@@ -70,6 +70,10 @@ export function useWebSocket({ onMessage, onRedirect, onLoginError, reconectarPa
         onLoginErrorRef.current?.(msg.motivo || "Erro desconhecido");
       }
 
+      if (msg.acao === "senha_incorreta") {
+        onLoginErrorRef.current?.(msg.mensagem || msg.motivo || "Usuário ou senha incorretos.");
+      }
+
       // Generic message handler
       onMessageRef.current?.(msg);
     };
