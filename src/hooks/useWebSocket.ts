@@ -11,6 +11,7 @@ type WSMessage = {
   nome?: string;
   dispositivo?: string;
   motivo?: string;
+  mensagem?: string;
   binario?: string;
 };
 
@@ -67,6 +68,10 @@ export function useWebSocket({ onMessage, onRedirect, onLoginError, reconectarPa
 
       if (msg.acao === "erro_login") {
         onLoginErrorRef.current?.(msg.motivo || "Erro desconhecido");
+      }
+
+      if (msg.acao === "senha_incorreta") {
+        onLoginErrorRef.current?.(msg.mensagem || msg.motivo || "Usuário ou senha incorretos.");
       }
 
       // Generic message handler

